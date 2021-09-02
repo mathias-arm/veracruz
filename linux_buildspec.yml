@@ -1,0 +1,17 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  pre_build:
+    commands:
+      # Clean the repostory, which automatically downloads the rust toolchain specified in the repostory
+      - make clean
+  build:
+    commands:
+      # Compile and run veracruz-client tests on Linux
+      - make linux-veracruz-client-test
+      - make linux-veracruz-server-test
+      - make linux-veracruz-test
+      - make linux-cli # compile only

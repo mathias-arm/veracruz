@@ -12,7 +12,7 @@
 OUT_DIR?=.
 FINAL_DIR?=.
 
-.PHONY: all sgx trustzone clean deprecated nitro
+.PHONY: all linux sgx trustzone clean deprecated nitro
 
 all: deprecated
 
@@ -21,7 +21,7 @@ INFO_COLOR := "\e[1;32m"
 RESET_COLOR := "\e[0m"
 
 deprecated:
-	@echo $(WARNING_COLOR)"The default target, compiling sgx, is deprecated. Please explicitly choose target, sgx or trustzone." $(RESET_COLOR)
+	@echo $(WARNING_COLOR)"The default target, compiling sgx, is deprecated. Please explicitly choose target: linux, nitro, sgx, trustzone." $(RESET_COLOR)
 
 ############# SGX #################
 Signed_RustEnclave_RootName := runtime_manager.signed.so
@@ -139,6 +139,9 @@ css-tz.bin: $(FINAL_DIR)/$(TZ_UUID).ta
 css-nitro.bin: PCR0
 	cp $< $@
 
+css-linux.bin: target/release/runtime_manager_enclave
+	cp $< $@
+
 $(FINAL_DIR)/$(TZ_UUID).ta: $(OUT_DIR)/$(TZ_UUID).ta
 	cp $< $@
 
@@ -167,6 +170,14 @@ runtime_manager.eif: target/x86_64-unknown-linux-musl/release/runtime_manager_en
 
 target/x86_64-unknown-linux-musl/release/runtime_manager_enclave: Cargo.toml $(Nitro_Src)
 	cargo build --target x86_64-unknown-linux-musl --release --features nitro
+
+####### Linux (AArch64 and X64) processes  #########
+Linux_Src = $(COMMON_Src) src/runtime_manager_linux.rs src/main.rs
+
+target/release/runtime_manager_enclave: Cargo.toml $(Linux_Src)
+	cargo build --release --features linux
+
+linux: target/release/runtime_manager_enclave
 
 clean:
 	@cargo clean

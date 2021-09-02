@@ -3,7 +3,7 @@
 //! One of the main integration tests for Veracruz, as a lot of material is
 //! imported directly or indirectly via these tests.
 //!
-//! ## Authors
+//! ## Authors
 //!
 //! The Veracruz Development Team.
 //!
@@ -16,12 +16,16 @@ mod tests {
     use actix_rt::System;
     use env_logger;
     use lazy_static::lazy_static;
-    use log::{debug, info, LevelFilter};
+    use log::{debug, error, info, LevelFilter};
+    use rand;
+    use rand::Rng;
     use ring;
 
     use serde::Deserialize;
     use transport_protocol;
     use veracruz_server::veracruz_server::*;
+    #[cfg(feature = "linux")]
+    use veracruz_server::VeracruzServerLinux as VeracruzServerEnclave;
     #[cfg(feature = "nitro")]
     use veracruz_server::VeracruzServerNitro as VeracruzServerEnclave;
     #[cfg(feature = "sgx")]
@@ -29,10 +33,11 @@ mod tests {
     #[cfg(feature = "tz")]
     use veracruz_server::VeracruzServerTZ as VeracruzServerEnclave;
     use veracruz_utils::{platform::Platform, policy::policy::Policy, VERACRUZ_RUNTIME_HASH_EXTENSION_ID};
+    #[cfg(feature = "nitro")]
+    use regex::Regex;
     use proxy_attestation_server;
     use std::{
-        collections::HashMap,
-        collections::HashSet,
+        collections::{HashMap, HashSet},
         io::{Read, Write},
         path::Path,
         sync::{
@@ -120,7 +125,8 @@ mod tests {
         let rst = NEXT_TICKET.fetch_add(1, Ordering::SeqCst);
 
         SETUP.call_once(|| {
-            println!("SETUP.call_once called");
+            info!("SETUP.call_once called");
+
             let _main_loop_handle = std::thread::spawn(|| {
                 let mut sys = System::new("Veracruz Proxy Attestation Server");
                 println!("spawned thread calling server with url:{:?}", proxy_attestation_server_url);
@@ -260,7 +266,7 @@ mod tests {
         let (policy, policy_json, _) = read_policy(ONE_DATA_SOURCE_POLICY).unwrap();
         // start the proxy attestation server
         setup(policy.proxy_attestation_server_url().clone());
-        let (veracruz_server, _) = init_veracruz_server_and_tls_session(&policy_json).unwrap();
+        let _ = init_veracruz_server_and_tls_session(&policy_json).unwrap();
 
         let client_cert_filename = "../test-collateral/never_used_cert.pem";
         let client_key_filename = "../test-collateral/client_rsa_key.pem";
@@ -399,10 +405,10 @@ mod tests {
     #[test]
     /// Integration test:
     /// policy: PiProvider, DataProvider and ResultReader is the same party
-    /// computation: linear regression, computing the grandient and intercept, ie the LinearRegression struct,
-    /// given a series of point in the two-dimension space.
-    /// data sources: linear-regression, a vec of points in two-dimention space, representing by
-    /// Vec<(f64, f64)>
+    /// computation: linear regression, computing the gradient and intercept,
+    /// i.e. the LinearRegression struct, given a series of point in the
+    /// two-dimensional space.  Data sources: linear-regression, a vec of points
+    /// in two-dimensional space, represented by Vec<(f64, f64)>.
     fn test_phase2_linear_regression_single_data_no_attestation() {
         let result = test_template::<LinearRegression>(
             LINEAR_REGRESSION_POLICY,
@@ -478,10 +484,10 @@ mod tests {
     #[test]
     /// Integration test:
     /// policy: PiProvider, DataProvider and ResultReader is the same party
-    /// computation: linear regression, computing the grandient and intercept, ie the LinearRegression struct,
-    /// given a series of point in the two-dimension space.
-    /// data sources: linear-regression, a vec of points in two-dimention space, representing by
-    /// Vec<(f64, f64)>
+    /// computation: linear regression, computing the gradient and intercept,
+    /// i.e. the LinearRegression struct, given a series of point in the
+    /// two-dimensional space. Data sources: linear-regression, a vec of points
+    /// in two-dimensional space, represented by Vec<(f64, f64)>
     /// A standard one data source scenario with attestation.
     fn test_phase3_linear_regression_one_data_with_attestation() {
         let result = test_template::<LinearRegression>(
@@ -507,10 +513,10 @@ mod tests {
         grade: u8,
     }
 
-    #[test]
+   #[test]
     /// Integration test:
     /// policy: PiProvider, DataProvider and ResultReader is the same party
-    /// compuatation: set intersection, computing the intersection of two sets of persons.
+    /// computation: set intersection, computing the intersection of two sets of persons.
     /// data sources: two vecs of persons, representing by Vec<Person>
     /// A standard two data sources scenario with attestation.
     fn test_phase3_private_set_intersection_two_data_with_attestation() {
@@ -531,7 +537,7 @@ mod tests {
     #[test]
     /// Integration test:
     /// policy: PiProvider, DataProvider, StreamProvider and ResultReader is the same party
-    /// compuatation: sum of an initial f64 number and two streams of f64 numbers.
+    /// computation: sum of an initial f64 number and two streams of f64 numbers.
     /// data sources: an initial f64 value, and two vecs of f64, representing two streams.
     /// A standard one data source and two stream sources scenario with attestation.
     fn test_phase4_number_stream_accumulation_one_data_two_stream_with_attestation() {
@@ -669,7 +675,6 @@ mod tests {
     /// data sources: private-set-inter-sum/*.dat
     fn test_performance_set_intersection_sum_with_attestation() {
         iterate_over_data("../test-collateral/private-set-inter-sum/", |data_path| {
-            info!("Data path: {}", data_path);
             // call the test_template with info flag on,
             // which prints out the time
             let result = test_template::<(usize, u64)>(
@@ -680,6 +685,7 @@ mod tests {
                 &[("input-0", data_path)],
                 &[],
             );
+
             assert!(result.is_ok(), "error:{:?}", result);
         });
     }
@@ -731,6 +737,9 @@ mod tests {
                 Ok(id)
             }
         })?;
+
+        #[cfg(feature = "linux")]
+        let test_target_platform: Platform = Platform::Linux;
         #[cfg(feature = "nitro")]
         let test_target_platform: Platform = Platform::Nitro;
         #[cfg(feature = "sgx")]
@@ -745,7 +754,7 @@ mod tests {
             client_key_path,
         )?;
         info!(
-            "             Initialasation time (μs): {}.",
+            "             Initialization time (μs): {}.",
             time_init.elapsed().as_micros()
         );
 
@@ -765,7 +774,7 @@ mod tests {
             time_server_boot.elapsed().as_micros()
         );
 
-        // Need to clone paths to concreate strings,
+        // Need to clone paths to concrete strings,
         // so the ownership can be transferred into a client thread.
         let program_path: Option<String> = program_path.map(|p| p.to_string());
         // Assuming we are using single data provider,
@@ -782,7 +791,7 @@ mod tests {
             .collect();
 
         // This is a closure, containing instructions from clients.
-        // A sperate thread is spawn and direcly call this closure.
+        // A separate thread is spawn and directly call this closure.
         // However if an Error pop up, the thread set the CONTINUE_FLAG to false,
         // hence stopping the server thread.
         let mut client_body = move || {
@@ -799,7 +808,8 @@ mod tests {
             };
             // if there is a program provided
             if let Some(path) = program_path.as_ref() {
-                let time_provosion_data = Instant::now();
+                let time_provision_data = Instant::now();
+                info!("Checking policy hash...");
                 check_policy_hash(
                     &policy_hash,
                     client_session_id,
@@ -808,10 +818,15 @@ mod tests {
                     &client_tls_tx,
                     &client_tls_rx,
                 )?;
+
+                info!("Policy hash OK...");
+                
                 check_runtime_manager_hash(&policy,
                                            &client_session,
                                            &test_target_platform)?;
 
+                info!("Provisioning program...");
+                
                 let response = provision_program(
                     path,
                     client_session_id,
@@ -826,7 +841,7 @@ mod tests {
                 );
                 info!(
                     "             Provisioning program time (μs): {}.",
-                    time_provosion_data.elapsed().as_micros()
+                    time_provision_data.elapsed().as_micros()
                 );
             }
 
@@ -1092,6 +1107,8 @@ mod tests {
             Ok::<(), VeracruzServerError>(())
         };
 
+        info!("Preparing to spawn client body thread.");
+
         thread::spawn(move || {
             client_body().map_err(|e| {
                 CONTINUE_FLAG_HASH.lock().unwrap().insert(ticket, false);
@@ -1102,10 +1119,15 @@ mod tests {
         // double `?` one for join and one for client_body
         .map_err(|e| VeracruzServerError::JoinError(e))??;
 
+        info!("Client body thread launched.");
+
         // double `?` one for join and one for client_body
         server_loop_handle
             .join()
             .map_err(|e| VeracruzServerError::JoinError(e))??;
+
+        info!("Server thread launached.");
+
         Ok(())
     }
 
@@ -1175,7 +1197,7 @@ mod tests {
     fn init_veracruz_server_and_tls_session(
         policy_json: &str,
     ) -> Result<(VeracruzServerEnclave, u32), VeracruzServerError> {
-        let veracruz_server = VeracruzServerEnclave::new(&policy_json)?;
+        let mut veracruz_server = VeracruzServerEnclave::new(&policy_json)?;
 
         let one_tenth_sec = std::time::Duration::from_millis(100);
         std::thread::sleep(one_tenth_sec); // wait for the client to start
@@ -1224,7 +1246,14 @@ mod tests {
         client_tls_tx: &std::sync::mpsc::Sender<(u32, std::vec::Vec<u8>)>,
         client_tls_rx: &std::sync::mpsc::Receiver<std::vec::Vec<u8>>,
     ) -> Result<(), VeracruzServerError> {
-        let serialized_request_policy_hash = transport_protocol::serialize_request_policy_hash()?;
+        info!("Serializing policy hash request.");
+        
+        let serialized_request_policy_hash = transport_protocol::serialize_request_policy_hash().map_err(|e| {
+            error!("Failed to serialize request for policy hash.  Error produced: {:?}.", e);
+ 
+            e
+        })?;
+        
         let response = client_tls_send(
             client_tls_tx,
             client_tls_rx,
@@ -1232,24 +1261,36 @@ mod tests {
             client_session,
             ticket,
             &serialized_request_policy_hash[..],
-        )?;
+        ).map_err(|e| {
+            error!("Failed to send TLS data.  Error produced: {:?}.", e);
+
+            e
+        })?;
+
+        info!("Reponse received: {:?}", response);
+        
         let parsed_response = transport_protocol::parse_runtime_manager_response(&response)?;
         let status = parsed_response.get_status();
+        
         if status != transport_protocol::ResponseStatus::SUCCESS {
+            error!("Received non-Success status: {:?}.", status);
             return Err(VeracruzServerError::ResponseError(
                 "check_policy_hash parse_runtime_manager_response",
                 status,
             ));
         }
         let received_hash = std::str::from_utf8(&parsed_response.get_policy_hash().data)?;
-        if received_hash == expected_policy_hash {
-            return Ok(());
+        info!("Received {:?} as hash.", received_hash);
+        return if received_hash == expected_policy_hash {
+            info!("Hash matches expected hash ({:?}).", expected_policy_hash);
+            Ok(())
         } else {
-            return Err(VeracruzServerError::MismatchError {
+            error!("Hash does not match expected hash ({:?}).", expected_policy_hash);
+            Err(VeracruzServerError::MismatchError {
                 variable: "request_policy_hash",
                 received: received_hash.as_bytes().to_vec(),
                 expected: expected_policy_hash.as_bytes().to_vec(),
-            });
+            })
         }
     }
 
@@ -1269,10 +1310,16 @@ mod tests {
                 Err(_) => return false,
                 Ok(bytes) => bytes,
             };
+
+            info!("Comparing runtime manager hash {:?} (from policy) against {:?} (received) for platform {:?}.", expected_bytes, received, platform);
     
             if &received[..] != expected_bytes.as_slice() {
+                error!("Runtime manager hash does not match.");
+                
                 return false;
             } else {
+                info!("Runtime manager hash matches.");
+
                 return true;
             }
         }
@@ -1282,32 +1329,38 @@ mod tests {
                                   client_session: &dyn rustls::Session,
                                   test_target_platform: &Platform,
     ) -> Result<(), VeracruzServerError> {
-        match client_session.get_peer_certificates() {
+        return match client_session.get_peer_certificates() {
             None => {
-                return Err(VeracruzServerError::MissingFieldError("NO PEER CERTIFICATES. WTF?"));
+                error!("No peer certificate found.");
+
+                Err(VeracruzServerError::MissingFieldError("NO PEER CERTIFICATES. WTF?"))
             },
             Some(certs) => {
                 let ee_cert = webpki::EndEntityCert::from(certs[0].as_ref()).unwrap();
                 let ues = ee_cert.unrecognized_extensions();
+                
                 // check for OUR extension
                 let encoded_extension_id: [u8; 3] = [VERACRUZ_RUNTIME_HASH_EXTENSION_ID[0] * 40 + VERACRUZ_RUNTIME_HASH_EXTENSION_ID[1],
                                                      VERACRUZ_RUNTIME_HASH_EXTENSION_ID[2],
                                                      VERACRUZ_RUNTIME_HASH_EXTENSION_ID[3]];
                 match ues.get(&encoded_extension_id[..]) {
                     None => {
-                        println!("Our extension is not present. This should be fatal");
-                        return Err(VeracruzServerError::MissingFieldError("MY CRAZY CUSTOM EXTENSION AIN'T TERE"));
+                        error!("Our certificate extension is not present.");
+
+                        Err(VeracruzServerError::MissingFieldError("MY CRAZY CUSTOM EXTENSION AIN'T THERE"))
                     },
                     Some(data) => {
+                        info!("Certificate extension found.");
+
                         let extension_data = data.read_all(VeracruzServerError::MissingFieldError("CAN'T READ MY CRAZY CUSTOM EXTENSION"), |input| {
                             Ok(input.read_bytes_to_end())
                         })?;
                         if !compare_policy_hash(extension_data.as_slice_less_safe(), &policy, test_target_platform) {
-                               // The hashes didn't match
-                               println!("None of the hashes matched.");
-                               return Err(VeracruzServerError::InvalidRuntimeManagerHash);
+                            error!("None of the runtime manager hashes matched.");
+                            
+                            return Err(VeracruzServerError::InvalidRuntimeManagerHash);
                         }
-                        return Ok(());
+                        Ok(())
                     }
                 }
             }
@@ -1370,26 +1423,43 @@ mod tests {
         rx: std::sync::mpsc::Receiver<(u32, std::vec::Vec<u8>)>,
         ticket: u32,
     ) -> Result<(), VeracruzServerError> {
-        while *CONTINUE_FLAG_HASH.lock()?.get(&ticket).ok_or(
+        info!("Inside server TLS loop...");
+
+        while *CONTINUE_FLAG_HASH.lock().map_err(|e| {
+            error!("Failed to obtain lock on CONTINUE_FLAG_HASH.  Error produced: {:?}.", e);
+            e
+        })?.get(&ticket).ok_or(
             VeracruzServerError::MissingFieldError("CONTINUE_FLAG_HASH ticket"),
         )? {
             let received = rx.try_recv();
             let (session_id, received_buffer) = received.unwrap_or_else(|_| (0, Vec::new()));
 
             if received_buffer.len() > 0 {
+
                 let (active_flag, output_data_option) =
-                    veracruz_server.tls_data(session_id, received_buffer)?;
+                    veracruz_server.tls_data(session_id, received_buffer).map_err(|e| {
+                        error!("Failed to send TLS data.  Error produced: {:?}.", e);
+                        e
+                    })?;
                 let output_data = output_data_option.unwrap_or_else(|| Vec::new());
+
                 for output in output_data.iter() {
                     if output.len() > 0 {
-                        tx.send(output.clone())?;
+                        tx.send(output.clone()).map_err(|e| {
+                            error!("Failed to send data on TX channel.  Error produced: {:?}.", e);
+                            e
+                        })?;
                     }
                 }
+
                 if !active_flag {
+                    info!("VeracruzServer TLS loop dieing due to lack of TLS data.");
                     return Ok(());
                 }
             }
         }
+        error!("VeracruzServer TLS loop dieing due to no activity...");
+
         Err(VeracruzServerError::DirectStrError(
             "No message arrives server",
         ))
@@ -1403,36 +1473,71 @@ mod tests {
         ticket: u32,
         send_data: &[u8],
     ) -> Result<Vec<u8>, VeracruzServerError> {
-        session.write_all(&send_data)?;
+        session.write_all(&send_data).map_err(|e| {
+            error!("Failed to send all data.  Error produced: {:?}.", e);
+            e
+        })?;
 
         let mut output: std::vec::Vec<u8> = std::vec::Vec::new();
 
-        session.write_tls(&mut output)?;
+        session.write_tls(&mut output).map_err(|e| {
+            error!("Failed to write TLS.  Error produced: {:?}.", e);
+            e
+        })?;
 
-        tx.send((session_id, output))?;
+        tx.send((session_id, output)).map_err(|e| {
+            error!("Failed to send data on TX channel.  Error produced: {:?}.", e);
+            e
+        })?;
 
-        while *CONTINUE_FLAG_HASH.lock()?.get(&ticket).ok_or(
+        while *CONTINUE_FLAG_HASH.lock().map_err(|e| {
+            error!("Failed to obtain lock on CONTINUE_FLAG_HASH.  Error produced: {:?}.", e);
+            e
+        })?.get(&ticket).ok_or(
             VeracruzServerError::MissingFieldError("CONTINUE_FLAG_HASH ticket"),
         )? {
             let received = rx.try_recv();
 
             if received.is_ok() && (!session.is_handshaking() || session.wants_read()) {
-                let received = received?;
+                info!("Received is OK, and we're not handshaking...");
+                
+                let received = received.map_err(|e| {
+                    error!("Invariant failed.  Received was not OK.");
+                    e
+                })?;
 
                 let mut slice = &received[..];
-                session.read_tls(&mut slice)?;
-                session.process_new_packets()?;
+                session.read_tls(&mut slice).map_err(|e| {
+                    error!("Failed to read TLS.  Error produced: {:?}.", e);
+                    e
+                })?;
+                session.process_new_packets().map_err(|e| {
+                    error!("Failed to process new packets.  Error produced: {:?}.", e);
+                    e
+                })?;
 
                 let mut received_buffer: std::vec::Vec<u8> = std::vec::Vec::new();
 
-                let num_bytes = session.read_to_end(&mut received_buffer)?;
+                let num_bytes = session.read_to_end(&mut received_buffer).map_err(|e| {
+                    error!("Failed to read data to end.  Error produced: {:?}.", e);
+                    e
+                })?;
+                
                 if num_bytes > 0 {
+                    info!("Finished sending via TLS.");
                     return Ok(received_buffer);
                 }
             } else if session.wants_write() {
+                info!("Session wants write...");
                 let mut output: std::vec::Vec<u8> = std::vec::Vec::new();
-                session.write_tls(&mut output)?;
-                let _res = tx.send((session_id, output))?;
+                session.write_tls(&mut output).map_err(|e| {
+                    error!("Failed to write TLS.  Error produced: {:?}.", e);
+                    e
+                })?;
+                let _res = tx.send((session_id, output)).map_err(|e| {
+                    error!("Failed to send data on TX channel.  Error produced: {:?}.", e);
+                    e
+                })?;
             }
         }
         Err(VeracruzServerError::DirectStrError(

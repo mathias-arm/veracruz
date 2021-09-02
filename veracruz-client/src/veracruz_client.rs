@@ -10,6 +10,8 @@
 //! information on licensing and copyright.
 
 use crate::error::VeracruzClientError;
+
+use log::{info, error};
 use ring::signature::KeyPair;
 use rustls::Session;
 use std::{
@@ -17,8 +19,11 @@ use std::{
     io::{Read, Write},
     str::from_utf8,
 };
-use veracruz_utils::policy::policy::Policy;
-use veracruz_utils::{platform::Platform, VERACRUZ_RUNTIME_HASH_EXTENSION_ID};
+use veracruz_utils::{
+    policy::policy::Policy,
+    platform::Platform,
+    VERACRUZ_RUNTIME_HASH_EXTENSION_ID
+};
 use webpki;
 
 // Use Mockall for testing
@@ -241,8 +246,17 @@ impl VeracruzClient {
     }
 
     pub fn send_program(&mut self, file_name:&str, program: &Vec<u8>) -> Result<(), VeracruzClientError> {
-        self.check_policy_hash()?;
-        self.check_runtime_hash()?;
+        self.check_policy_hash().map_err(|e| {
+            error!("Policy hash incorrect when sending program.  Error produced: {}.", e);
+            
+            e
+        })?;
+
+        self.check_runtime_hash().map_err(|e| {
+            error!("Runtime hash incorrect when sending program.  Error produced: {}.", e);
+
+            e
+        })?;
 
         let serialized_program = transport_protocol::serialize_program(&program, file_name)?;
         let response = self.send(&serialized_program)?;
@@ -324,7 +338,7 @@ impl VeracruzClient {
     }
 
     fn compare_runtime_hash(&self, received: &[u8]) -> Result<(), VeracruzClientError> {
-        let platforms = vec![Platform::SGX, Platform::TrustZone, Platform::Nitro];
+        let platforms = vec![Platform::Linux, Platform::SGX, Platform::TrustZone, Platform::Nitro];
         for platform in platforms {
             let expected = match self.policy.runtime_manager_hash(&platform) {
                 Err(_) => continue, // no hash found for this platform
@@ -358,18 +372,28 @@ impl VeracruzClient {
                                                      VERACRUZ_RUNTIME_HASH_EXTENSION_ID[3]];
                 match ues.get(&encoded_extension_id[..]) {
                     None => {
-                        println!("Our extension is not present. This should be fatal");
+                        error!("Our extension is not present. This should be fatal");
+                        
                         return Err(VeracruzClientError::RuntimeHashExtensionMissingError);
                     },
                     Some(data) => {
+                        info!("Certificate extension present.");
+
                         let extension_data = data.read_all(VeracruzClientError::UnableToReadError, |input| {
                             Ok(input.read_bytes_to_end())
                         })?;
+
+                        info!("Certificate extension extracted correctly.");
+
                         match self.compare_runtime_hash(extension_data.as_slice_less_safe()) {
-                            Ok(_) => return Ok(()),
+                            Ok(_) => {
+                                info!("Runtime hash matches.");
+
+                                return Ok(())
+                            },
                             Err(err) => {
-                                // None of the hashes matched
-                                println!("None of the hashes matched.");
+                                error!("Runtime hash mismatch: {}.", err);
+
                                 return Err(err);
                             }
                         }
