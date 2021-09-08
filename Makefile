@@ -27,6 +27,10 @@ BIN_DIR ?= /usr/local/cargo/bin
 all:
 	@echo $(WARNING_COLOR)"Please explicitly choose a target."$(RESET_COLOR)
 
+setup-githooks:
+	rustup component add rustfmt
+	git config core.hooksPath githooks
+
 # Build all of the SDK and examples
 sdk:
 	$(MAKE) -C sdk
