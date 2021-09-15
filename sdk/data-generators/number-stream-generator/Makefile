@@ -16,6 +16,7 @@ TARGET_DAT = $(addprefix $(TARGET_PREFIX), -init.dat -1.dat -2.dat)
 TARGET_DIR = ../../datasets/
 TARGET_DIR_DAT = $(addprefix $(TARGET_DIR),$(TARGET_DAT))
 SEED = 0
+RUN_COMMAND ?= cargo run --
 
 .PHONY: all clean fmt
 
@@ -29,7 +30,7 @@ $(TARGET_DIR):
 	mkdir -p $(TARGET_DIR)
 
 $(TARGET_DAT): 
-	cargo run -- --file_prefix $(TARGET_PREFIX) --size $(STREAM_ROUND) --seed $(SEED); 
+	$(RUN_COMMAND) --file_prefix $(TARGET_PREFIX) --size $(STREAM_ROUND) --seed $(SEED); 
 
 clean:
 	cargo clean
