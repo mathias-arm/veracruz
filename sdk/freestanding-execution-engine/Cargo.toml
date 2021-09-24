@@ -14,11 +14,12 @@ clap = "2.33.3"
 bitflags = "=1.2.1"
 env_logger = "0.7.1"
 log = "0.4.8"
-serde = { version = "1.0.103", features = ["derive"] }
+serde = { path = "../../third-party/serde/serde", features = ["derive"] }
 toml = "0.5.5"
 wast = "=35.0.0"
 wat = "<1.0.38"
-wasi-types = { git = "https://github.com/veracruz-project/wasi-types.git", branch = "veracruz" }
+wasmi = { path = "../../third-party/wasmi", features = ["non_sgx"] }
+wasi-types = { path = "../../third-party/wasi-types" }
 
 [[bin]]
 name = "freestanding-execution-engine"
