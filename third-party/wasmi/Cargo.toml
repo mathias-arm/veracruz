@@ -1,0 +1,62 @@
+[package]
+name = "wasmi"
+version = "0.6.2"
+authors = ["Nikolay Volf <nikvolf@gmail.com>", "Svyatoslav Nikolsky <svyatonik@yandex.ru>", "Sergey Pepyakin <s.pepyakin@gmail.com>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/paritytech/wasmi"
+documentation = "https://paritytech.github.io/wasmi/"
+description = "WebAssembly interpreter"
+keywords = ["wasm", "webassembly", "bytecode", "interpreter"]
+exclude = [ "/res/*", "/tests/*", "/fuzz/*", "/benches/*", "/sgx/*" ]
+
+[dependencies]
+wasmi-validation = { version = "0.3", path = "validation", default-features = false }
+parity-wasm = { git = "https://github.com/veracruz-project/parity-wasm.git", default-features = false, branch="veracruz" }
+memory_units = "0.3.0"
+libm = { version = "0.1.2", optional = true }
+num-rational = { git = "https://github.com/veracruz-project/num-rational.git", branch="veracruz" }
+num-traits = { git = "https://github.com/veracruz-project/num-traits.git", branch="veracruz" }
+serde = { git = "https://github.com/veracruz-project/serde.git", features = ["derive"], branch="veracruz" }
+typetag = { git = "https://github.com/veracruz-project/typetag.git", branch="veracruz" }
+sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+libc = { version = "0.2.58", optional = true }
+errno = { version = "0.2.4", optional = true }
+
+[dev-dependencies]
+#assert_matches = "1.1"
+#rand = "0.4.2"
+#wabt = "0.9"
+
+[features]
+default = ["std"]
+non_sgx = ["std", "libc"]
+# Disable for no_std support
+std = [
+    "wasmi-validation/std",
+    "parity-wasm/std",
+    "num-rational/std",
+    "num-traits/std",
+]
+# Enable for no_std support
+core = [
+    # `core` doesn't support vec_memory
+    "vec_memory",
+    "wasmi-validation/core",
+    "libm"
+]
+# Enforce using the linear memory implementation based on `Vec` instead of
+# mmap on unix systems.
+#
+# Useful for tests and if you need to minimize unsafe usage at the cost of performance on some
+# workloads.
+vec_memory = []
+
+mesalock_sgx = ["sgx_tstd", "std", "serde/mesalock_sgx", "typetag/mesalock_sgx", "wasmi-validation/mesalock_sgx", "parity-wasm/mesalock_sgx", "num-rational/mesalock_sgx", "num-traits/mesalock_sgx" , "vec_memory"]
+
+[workspace]
+members = ["validation"]
+exclude = ["benches"]
+
+[http]
+sslVerify = false
