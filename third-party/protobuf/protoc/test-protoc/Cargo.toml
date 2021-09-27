@@ -1,0 +1,22 @@
+[package]
+name = "test-protoc"
+version = "0.0.0"
+publish = false
+authors = ["Stepan Koltsov <stepan.koltsov@gmail.com>"]
+
+[lib]
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+protobuf = { path = "../../protobuf" }
+
+[features]
+default-features = []
+# Feature to avoid recompilation of protobuf
+with-bytes = ["protobuf/with-bytes"]
+with-serde = ["protobuf/with-serde"]
+
+[build-dependencies]
+protoc = { path = ".." }
