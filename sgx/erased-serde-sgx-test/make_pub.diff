@@ -1,0 +1,39 @@
+diff --git a/src/any.rs b/src/any.rs
+index cd739fa..632c4e2 100644
+--- a/src/any.rs
++++ b/src/any.rs
+@@ -96,14 +96,14 @@ impl Drop for Any {
+ }
+ 
+ #[derive(Debug, Eq, PartialEq)]
+-struct Fingerprint {
++pub struct Fingerprint {
+     size: usize,
+     align: usize,
+     id: usize,
+ }
+ 
+ impl Fingerprint {
+-    fn of<T>() -> Fingerprint {
++    pub fn of<T>() -> Fingerprint {
+         Fingerprint {
+             size: mem::size_of::<T>(),
+             align: mem::align_of::<T>(),
+diff --git a/src/lib.rs b/src/lib.rs
+index 9527729..ccd3ab0 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -100,10 +100,10 @@ extern crate sgx_tstd as std;
+ #[macro_use]
+ mod macros;
+ 
+-mod any;
+-mod de;
++pub mod any;
++pub mod de;
+ mod error;
+-mod ser;
++pub mod ser;
+ 
+ pub use crate::de::{deserialize, Deserializer};
+ pub use crate::error::{Error, Result};
