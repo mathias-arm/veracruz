@@ -17,29 +17,26 @@ exclude = ["/ci/*", "/.travis.yml", "/bors.toml", "/sgx/*"]
 features = ["std", "bigint-std", "serde"]
 
 [dependencies]
-sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_tstd = { path = "../rust-sgx-sdk/sgx_tstd", optional = true }
 
 [dependencies.num-bigint]
 optional = true
 default-features = false
-branch = "veracruz"
-git = "https://github.com/veracruz-project/num-bigint.git"
+path = "../num-bigint"
 
 [dependencies.num-integer]
 default-features = false
-branch = "veracruz"
-git = "https://github.com/veracruz-project/num-integer.git"
+path = "../num-integer"
 
 [dependencies.num-traits]
 default-features = false
-branch = "veracruz"
-git = "https://github.com/veracruz-project/num-traits.git"
+path = "../num-traits"
 
 [dependencies.serde]
-optional = true
 version = "1.0.0"
-default-features = false
-#git = "https://github.com/mesalock-linux/serde-sgx"
+optional = true
+# default-features = false
+# path = "../serde/serde"
 
 [features]
 default = ["bigint-std", "std"]
