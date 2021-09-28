@@ -17,11 +17,10 @@ exclude = ["/ci/*", "/.travis.yml", "/bors.toml", "/sgx/*"]
 features = ["std"]
 
 [dependencies.num-traits]
-branch = "veracruz"
-git = "https://github.com/veracruz-project/num-traits.git"
+path = "../num-traits"
 
 [dependencies]
-sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_tstd = { path = "../rust-sgx-sdk/sgx_tstd", optional = true }
 
 [features]
 default = ["std"]
