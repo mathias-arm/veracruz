@@ -27,5 +27,5 @@ sgx_ucrypto = { path = "crates/third-party/rust-sgx-sdk/sgx_ucrypto", optional =
 sgx_unwind = { path = "crates/third-party/rust-sgx-sdk/sgx_unwind", optional = true }
 
 [patch.crates-io]
-serde = { git = "https://github.com/veracruz-project/serde.git", features=["derive"], branch = "veracruz" }
-rustls = { git = "https://github.com/veracruz-project/rustls.git", branch = "veracruz" }
+serde = { path = "crates/third-party/serde/serde", features=["derive"] }
+rustls = { path = "crates/third-party/rustls" }
