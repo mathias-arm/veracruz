@@ -1,0 +1,11 @@
+[package]
+name = "sysroot"
+version = "0.0.0"
+edition = "2018"
+
+[lib]
+name = "sysroot"
+path = "src/lib.rs"
+
+[dependencies.std]
+path = "../third-party/rust-sgx-sdk/xargo/sgx_tstd"

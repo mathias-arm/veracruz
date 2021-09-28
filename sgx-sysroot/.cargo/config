@@ -1,0 +1,2 @@
+[build]
+rustflags = [ "-Z", "force-unstable-if-unmarked", "--sysroot", "/dev/null",]
