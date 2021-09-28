@@ -22,10 +22,11 @@ default = []
 mesalock_sgx = ["sgx_tstd","serde/mesalock_sgx"]
 
 [dependencies]
-bytes = { branch = "veracruz", optional = true, git = "https://github.com/veracruz-project/bytes.git" }
-serde        = { branch = "veracruz", optional = true, git = "https://github.com/veracruz-project/serde.git" }
-serde_derive = { branch = "veracruz", optional = true, git = "https://github.com/veracruz-project/serde.git" }
-sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+bytes = { path = "../../bytes", optional = true }
+serde = { path = "../../serde/serde", optional = true }
+serde_derive = { path = "../../serde/serde_derive", optional = true }
+
+sgx_tstd = { path = "../../rust-sgx-sdk/sgx_tstd", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
