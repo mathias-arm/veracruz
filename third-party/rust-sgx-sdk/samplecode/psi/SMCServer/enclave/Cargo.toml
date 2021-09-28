@@ -11,13 +11,13 @@ crate-type = ["staticlib"]
 default = []
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tdh = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tcrypto = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tkey_exchange = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_rand = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_trts = { path = "../../../../../rust-sgx-sdk/sgx_trts" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd" }
+sgx_tdh = { path = "../../../../../rust-sgx-sdk/sgx_tdh" }
+sgx_tcrypto = { path = "../../../../../rust-sgx-sdk/sgx_tcrypto" }
+sgx_tkey_exchange = { path = "../../../../../rust-sgx-sdk/sgx_tkey_exchange" }
+sgx_rand = { path = "../../../../../rust-sgx-sdk/sgx_rand" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../../../sgx_alloc" }

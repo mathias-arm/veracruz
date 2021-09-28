@@ -17,7 +17,7 @@ rustls = { git = "https://github.com/mesalock-linux/rustls", branch = "mesalock_
 cfg-if = "*"
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_tstd    = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd    = { path = "../../../../../sgx_tstd" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../../../../sgx_alloc" }

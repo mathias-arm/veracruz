@@ -11,10 +11,10 @@ crate-type = ["staticlib"]
 default = []
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tseal = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_rand = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_tseal = { path = "../../../../../rust-sgx-sdk/sgx_tseal" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd" }
+sgx_rand = { path = "../../../../../rust-sgx-sdk/sgx_rand" }
 
 [dependencies]
 serde = { git = "https://github.com/mesalock-linux/serde-sgx" }

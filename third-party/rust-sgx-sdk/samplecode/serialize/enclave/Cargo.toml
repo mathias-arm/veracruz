@@ -8,11 +8,11 @@ name = "serializesampleenclave"
 crate-type = ["staticlib"]
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_serialize = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd" }
+sgx_serialize = { path = "../../../../../rust-sgx-sdk/sgx_serialize" }
 
 [dependencies]
-sgx_serialize_derive = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_serialize_derive = { path = "../../../../../rust-sgx-sdk/sgx_serialize_derive" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../../sgx_alloc" }

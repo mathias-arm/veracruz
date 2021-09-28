@@ -11,23 +11,23 @@ crate-type = ["staticlib"]
 default = []
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git", features = ["untrusted_fs", "thread", "backtrace"] }
-sgx_tcrypto = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tunittest = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_rand = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tseal = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_serialize = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_alloc = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_libc = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_signal = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd", features = ["untrusted_fs", "thread", "backtrace"] }
+sgx_tcrypto = { path = "../../../../../rust-sgx-sdk/sgx_tcrypto" }
+sgx_tunittest = { path = "../../../../../rust-sgx-sdk/sgx_tunittest" }
+sgx_trts = { path = "../../../../../rust-sgx-sdk/sgx_trts" }
+sgx_rand = { path = "../../../../../rust-sgx-sdk/sgx_rand" }
+sgx_tseal = { path = "../../../../../rust-sgx-sdk/sgx_tseal" }
+sgx_serialize = { path = "../../../../../rust-sgx-sdk/sgx_serialize" }
+sgx_alloc = { path = "../../../../../rust-sgx-sdk/sgx_alloc" }
+sgx_libc = { path = "../../../../../rust-sgx-sdk/sgx_libc" }
+sgx_signal = { path = "../../../../../rust-sgx-sdk/sgx_signal" }
 
 [dependencies]
-sgx_serialize_derive = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_serialize_derive = { path = "../../../../../rust-sgx-sdk/sgx_serialize_derive" }
 rand = { version = "0.5.5", default-features = false }
 memoffset = "0.5"
-sgx_align_struct_attribute = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_align_struct_attribute = { path = "../../../../../rust-sgx-sdk/sgx_align_struct_attribute" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_align_struct_attribute = { path = "../../../sgx_align_struct_attribute" }

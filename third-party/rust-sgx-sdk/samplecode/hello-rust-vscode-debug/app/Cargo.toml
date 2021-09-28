@@ -5,8 +5,8 @@ authors = ["The Teaclave Authors"]
 build = "build.rs"
 
 [dependencies]
-sgx_types =  { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_urts =  { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_urts = { path = "../../../../../rust-sgx-sdk/sgx_urts" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_types = { path = "../../../sgx_types" }

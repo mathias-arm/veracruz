@@ -14,8 +14,8 @@ default = []
 net2 = { git = "https://github.com/mesalock-linux/net2-rs-sgx" }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git", features = ["net"] }
-sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd", features = ["net"] }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../../sgx_alloc" }

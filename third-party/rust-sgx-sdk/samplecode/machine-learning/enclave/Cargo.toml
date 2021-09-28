@@ -14,9 +14,9 @@ default = []
 lto = true
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_rand = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_rand = { path = "../../../../../rust-sgx-sdk/sgx_rand" }
 
 [dependencies]
 # Choose the instruction set by specifying "fallback", "sse", "avx", "fma"
