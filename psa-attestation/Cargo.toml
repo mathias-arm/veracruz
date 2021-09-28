@@ -12,13 +12,13 @@ crate-type = ["rlib"]
 
 [features]
 # build.rs depends on features
-tz = []
+# tz = []
 linux = []
 sgx = []
 nitro = []
 
 [dependencies]
-libc = { git = "https://github.com/veracruz-project/libc.git", branch = "veracruz" }
+libc = { path = "../third-party/libc" }
 
 [build-dependencies]
 bindgen = "0.53.1"
