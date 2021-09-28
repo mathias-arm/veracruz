@@ -29,7 +29,7 @@ wasmtime-environ = { path = "crates/environ", version = "0.20.0" }
 wasmtime-jit = { path = "crates/jit", version = "0.20.0" }
 wasmtime-obj = { path = "crates/obj", version = "0.20.0" }
 wasmtime-wast = { path = "crates/wast", version = "0.20.0" }
-wasmtime-wasi = { path = "crates/WASI", version = "0.20.0" }
+wasmtime-wasi = { path = "crates/wasi", version = "0.20.0" }
 wasi-common = { path = "crates/wasi-common", version = "0.20.0" }
 structopt = { version = "0.3.5", features = ["color", "suggestions"] }
 object = { version = "0.21.1", default-features = false, features = ["write"] }
