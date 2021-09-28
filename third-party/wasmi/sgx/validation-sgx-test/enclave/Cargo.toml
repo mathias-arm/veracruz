@@ -17,6 +17,6 @@ assert_matches = { git = "https://github.com/mesalock-linux/assert_matches-sgx.g
 wabt = { git = "https://github.com/mesalock-linux/wabt-rs-sgx", branch = "v0.9-core" }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-sgx_types = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tunittest = {rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { path = "../../../../../rust-sgx-sdk/sgx_types" }
+sgx_tstd = { path = "../../../../../rust-sgx-sdk/sgx_tstd" }
+sgx_tunittest = { path = "../../../../../rust-sgx-sdk/sgx_tunittest" }
