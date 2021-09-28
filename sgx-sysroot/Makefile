@@ -4,7 +4,6 @@ SYSROOT_PATH = lib/rustlib/x86_64-unknown-linux-sgx/lib
 all: $(OUTDIR)/$(SYSROOT_PATH)/libstd.rlib
 
 $(OUTDIR)/$(SYSROOT_PATH)/libstd.rlib: target/x86_64-unknown-linux-sgx/release/libstd.rlib
-	rm -rf $(OUTDIR)
 	mkdir -p $(OUTDIR)/$(SYSROOT_PATH)
 	cp -r target/x86_64-unknown-linux-sgx/release/deps/* $(OUTDIR)/$(SYSROOT_PATH)
 

@@ -1,11 +1,38 @@
 [package]
-name = "sysroot"
+name = "std"
 version = "0.0.0"
+authors = ["The Teaclave Authors"]
+build = "build.rs"
 edition = "2018"
 
 [lib]
-name = "sysroot"
-path = "src/lib.rs"
+name = "std"
+path = "../third-party/rust-sgx-sdk/sgx_tstd/src/lib.rs"
+crate-type = ["rlib"]
 
-[dependencies.std]
-path = "../third-party/rust-sgx-sdk/xargo/sgx_tstd"
+[features]
+default = ["stdio"]
+backtrace = ["stdio"]
+stdio = []
+net = []
+pipe = []
+thread = []
+untrusted_fs = []
+untrusted_time = []
+
+[target.'cfg(not(target_env = "sgx"))'.dependencies]
+sgx_types = { path = "../third-party/rust-sgx-sdk/sgx_types" }
+sgx_libc = { path = "../third-party/rust-sgx-sdk/sgx_libc" }
+sgx_trts = { path = "../third-party/rust-sgx-sdk/sgx_trts" }
+sgx_alloc = { path = "../third-party/rust-sgx-sdk/sgx_alloc" }
+sgx_tprotected_fs = { path = "../third-party/rust-sgx-sdk/sgx_tprotected_fs" }
+sgx_backtrace_sys = { path = "../third-party/rust-sgx-sdk/sgx_backtrace_sys" }
+sgx_demangle = { path = "../third-party/rust-sgx-sdk/sgx_demangle" }
+sgx_unwind = { path = "../third-party/rust-sgx-sdk/sgx_unwind" }
+
+[dependencies.hashbrown]
+package = "hashbrown_tstd"
+path = "../third-party/rust-sgx-sdk/sgx_tstd/hashbrown"
+default-features = false
+features = ['rustc-dep-of-std']
+
