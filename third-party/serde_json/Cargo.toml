@@ -18,11 +18,11 @@ travis-ci = { repository = "serde-rs/json" }
 appveyor = { repository = "serde-rs/json" }
 
 [dependencies]
-serde = { git = "https://github.com/veracruz-project/serde.git", branch = "veracruz", default-features = false }
-indexmap = { git = "https://github.com/veracruz-project/indexmap.git", branch = "veracruz", optional = true }
-itoa = { git = "https://github.com/veracruz-project/itoa.git", branch = "veracruz", default-features = false }
+serde = { path = "../serde/serde", default-features = false }
+indexmap = { path = "../indexmap", optional = true }
+itoa = { path = "../itoa", default-features = false }
 ryu = "1.0"
-sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_tstd = { path = "../rust-sgx-sdk/sgx_tstd", optional = true }
 
 [dev-dependencies]
 #automod = "0.1"
