@@ -61,13 +61,14 @@ openssl-sys = "=0.9.70"
 pinecone = "0.2"
 policy-utils = { path = "../policy-utils", optional = true }
 psa-attestation = { path = "../psa-attestation", optional = true }
-ring = "0.16"
+ring = "0.16.11"
 rouille = "=3.2.1"
-rustls = { git = "https://github.com/veracruz-project/rustls.git", branch = "veracruz" }
+rustls = "0.16"
+serde = { git = "https://github.com/veracruz-project/serde.git", branch = "veracruz", default-features = false, features = ["derive"] }
 serde_json = { git = "https://github.com/veracruz-project/json.git", branch = "veracruz" }
 structopt = { version = "0.3", optional = true, features = ["wrap_help"] }
 tempfile = { version = "3.2.0", optional = true }
 transport-protocol = { path = "../transport-protocol" }
 uuid = { version = "0.7", optional = true }
 veracruz-utils = { path = "../veracruz-utils", optional = true }
-webpki = { git = "https://github.com/veracruz-project/webpki.git", branch = "veracruz" }
+webpki = "=0.21.2"
