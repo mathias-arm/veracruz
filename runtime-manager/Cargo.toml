@@ -63,7 +63,6 @@ err-derive = "0.2"
 execution-engine = { path = "../execution-engine" }
 half = "=1.7.1"
 hex = { version = "=0.4.2", default-features = false }
-http = "=0.2.4"
 icecap-wrapper = { path = "../icecap/src/rust/icecap-wrapper", optional = true }
 io-utils = { path = "../io-utils", optional = true }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }

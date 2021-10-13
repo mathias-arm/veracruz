@@ -7,7 +7,6 @@ version = "0.3.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitflags = "=1.2.1"
 clap = "2.33"
 pinecone = "0.2"
 # Required for std::error::Error from pinecone
