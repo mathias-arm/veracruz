@@ -1,0 +1,8 @@
+# wasi sdk toolchain
+WASI_SDK_SYSROOT=$(WASI_SDK_ROOT)/share/wasi-sysroot
+CLANG_FLAGS=--target=wasm32-wasi
+WASM_CC=$(WASI_SDK_ROOT)/bin/clang --sysroot=$(WASI_SDK_SYSROOT) $(CLANG_FLAGS)
+WASM_CXX=$(WASI_SDK_ROOT)/bin/clang++ --sysroot=$(WASI_SDK_SYSROOT) $(CLANG_FLAGS)
+WASM_CXX=$(WASM_CC)
+CC=gcc
+CFLAGS=-O3 -DPOLYBENCH_TIME -DPOLYBENCH_USE_C99_PROTO
