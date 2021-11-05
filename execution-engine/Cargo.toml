@@ -8,14 +8,23 @@ version = "0.3.0"
 [features]
 default = []
 # NOTE: Introduce non_sgx in the dependencies to deal with sgx-related modification.
-icecap = ["platform-services/icecap", "policy-utils/icecap", "wasmi/non_sgx"]
-nitro = ["platform-services/nitro", "policy-utils/std", "wasmtime", "wasi-types/std"]
-std = [
+icecap = [
+  "platform-services/icecap",
+  "policy-utils/icecap",
   "wasmi/non_sgx",
-  "platform-services/std",
-  "wasmtime",
+]
+nitro = [
+  "platform-services/nitro",
   "policy-utils/std",
-  "wasi-types/std"
+  "wasi-types/std",
+  "wasmtime",
+]
+std = [
+  "platform-services/std",
+  "policy-utils/std",
+  "wasi-types/std",
+  "wasmi/non_sgx",
+  "wasmtime",
 ]
 
 [dependencies]
