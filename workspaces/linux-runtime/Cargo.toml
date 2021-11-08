@@ -7,7 +7,6 @@ members = [
   "crates/platform-services",
   "crates/psa-attestation",
   "crates/runtime-manager",
-  "crates/runtime-manager-bind",
   "crates/session-manager",
   "crates/transport-protocol",
   "crates/veracruz-utils",

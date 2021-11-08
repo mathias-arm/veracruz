@@ -66,7 +66,6 @@ hex = { version = "0.4.2", default-features = false }
 icecap-wrapper = { path = "../icecap/crates-hack/crates/icecap-wrapper", optional = true }
 io-utils = { path = "../io-utils", optional = true }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
-libc = { git = "https://github.com/veracruz-project/libc.git", branch = "veracruz", optional = true }
 libm = { version = "0.2", optional = true }
 log = { version = "0.4.13", optional = true }
 nix = { version = "0.15", optional = true }
@@ -86,8 +85,8 @@ wasi-types = { git = "https://github.com/mathias-arm/wasi-types.git", branch = "
 wasmi = { git = "https://github.com/mathias-arm/wasmi.git", branch = "workspace", optional = true }
 
 [build-dependencies]
-libloading = "=0.5.2"
-uuid = { version = "0.7", features = ["v4"] }
+libloading = "0.5.2"
+uuid = { version = "0.8", features = ["v4"] }
 
 [profile.release]
 lto = true
