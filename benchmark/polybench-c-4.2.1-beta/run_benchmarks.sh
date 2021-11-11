@@ -25,7 +25,7 @@ for i in datamining/correlation datamining/covariance linear-algebra/blas/gemm l
 	time_wasmtime_upstream=`extract_time "$ret"`
 	sd_wasmtime_upstream=`extract_std_dev "$ret"`
 
-	ret=`bash utilities/time_benchmark.sh ../wasmtime/target/release/wasmtime --dir=$i $i/$kernel.wasm`
+	ret=`bash utilities/time_benchmark.sh ../wasmtime_vc/target/release/wasmtime --dir=$i $i/$kernel.wasm`
 	echo -e "$ret\n"
 	time_wasmtime_vc=`extract_time "$ret"`
 	sd_wasmtime_vc=`extract_std_dev "$ret"`
