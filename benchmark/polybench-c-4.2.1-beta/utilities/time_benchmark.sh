@@ -8,9 +8,13 @@
 ## Last update Fri Apr 22 15:39:13 2016 Louis-Noel Pouchet
 ##
 
-## Maximal variance accepted between the 3 median runs for performance results.
-## Here 5%
-VARIANCE_ACCEPTED=5;
+## Relative standard deviation (RSD) in %, accepted between the N median runs for performance results.
+RSD_THRESHOLD=3;
+
+# Batch size (number of runs)
+BATCH_SIZE=20
+# Batch size (number of runs) after removing the most extremes values
+BATCH_SIZE_AFTER_FILTER=20
 
 if [ $# -lt 1 ]; then
     echo "Usage: ./time_benchmarh.sh <binary_name>";
@@ -24,54 +28,68 @@ compute_mean_exec_time()
 {
     file="$1";
     benchcomputed="$2";
-    cat "$file" | grep "[0-9]\+" | sort -n | head -n 4 | tail -n 3 > avg.out;
+    cat "$file" | grep "[0-9]\+" | sort -n | head -n `echo "$BATCH_SIZE_AFTER_FILTER+($BATCH_SIZE - $BATCH_SIZE_AFTER_FILTER)/2" | bc 2>&1` | tail -n $BATCH_SIZE_AFTER_FILTER > avg.out;
     expr="(0";
     while read n; do
 	expr="$expr+$n";
     done < avg.out;
-    time=`echo "scale=8;$expr)/3" | bc`;
+    time=`echo "scale=10;$expr)/$BATCH_SIZE_AFTER_FILTER" | bc`;
     tmp=`echo "$time" | cut -d '.' -f 1`;
     if [ -z "$tmp" ]; then
 	time="0$time";
     fi;
-    val1=`cat avg.out | head -n 1`;
-    val2=`cat avg.out | head -n 2 | tail -n 1`;
-    val3=`cat avg.out | head -n 3 | tail -n 1`;
-    val11=`echo "a=$val1 - $time;if(0>a)a*=-1;a" | bc 2>&1`;
-    test_err=`echo "$val11" | grep error`;
-    if ! [ -z "$test_err" ]; then
-	echo "[ERROR] Program output does not match expected single-line with time.";
-	echo "[ERROR] The program must be a PolyBench, compiled with -DPOLYBENCH_TIME";
-	exit 1;
-    fi;
-    val12=`echo "a=$val2 - $time;if(0>a)a*=-1;a" | bc`;
-    val13=`echo "a=$val3 - $time;if(0>a)a*=-1;a" | bc`;
-    myvar=`echo "$val11 $val12 $val13" | awk '{ if ($1 > $2) { if ($1 > $3) print $1; else print $3; } else { if ($2 > $3) print $2; else print $3; } }'`;
-    variance=`echo "scale=5;($myvar/$time)*100" | bc`;
-    tmp=`echo "$variance" | cut -d '.' -f 1`;
-    if [ -z "$tmp" ]; then
-	variance="0$variance";
-    fi;
-    compvar=`echo "$variance $VARIANCE_ACCEPTED" | awk '{ if ($1 < $2) print "ok"; else print "error"; }'`;
+
+	SAVEIFS=$IFS   # Save current IFS
+	IFS=$'\n'      # Change IFS to new line
+	execution_times=(`cat avg.out`) # split to array $names
+	IFS=$SAVEIFS   # Restore IFS
+	for (( i=0; i<${#execution_times[@]}; i++ ))
+	do
+		# Make sure each value is a time duration
+		val=`echo "${execution_times[$i]}" | bc 2>&1`;
+		test_err=`echo "$val" | grep error`;
+		if ! [ -z "$test_err" ]; then
+			echo "[ERROR] Program output does not match expected single-line with time.";
+			echo "[ERROR] The program must be a PolyBench, compiled with -DPOLYBENCH_TIME";
+			exit 1;
+		fi;
+
+		echo "$i: ${execution_times[$i]}"
+
+		# Compute squared diff from average
+		execution_times_diff_square[$i]=`echo "scale=10;a=${execution_times[$i]} - $time;a^2" | bc 2>&1`;
+	done
+
+	# Compute standard deviation (SD)
+	sum_squared_diffs=0
+	for (( i=0; i<${#execution_times_diff_square[@]}; i++ ))
+	do
+		sum_squared_diffs=`echo "scale=10;$sum_squared_diffs+${execution_times_diff_square[$i]}" | bc 2>&1`
+	done
+	sd=`echo "scale=10;sqrt($sum_squared_diffs/$BATCH_SIZE_AFTER_FILTER)" | bc 2>&1`
+	rsd=`echo "scale=10;$sd*100/$time" | bc 2>&1`
+	ci_95=`echo "scale=10;2*$sd" | bc 2>&1`
+	lowest_95=`echo "scale=10;$time-$ci_95" | bc 2>&1`
+	highest_95=`echo "scale=10;$time+$ci_95" | bc 2>&1`
+
+    compvar=`echo "$rsd $RSD_THRESHOLD" | awk '{ if ($1 < $2) print "ok"; else print "error"; }'`;
     if [ "$compvar" = "error" ]; then
-	echo "[WARNING] Variance is above thresold, unsafe performance measurement";
-	echo "        => max deviation=$variance%, tolerance=$VARIANCE_ACCEPTED%";
-	WARNING_VARIANCE="$WARNING_VARIANCE\n$benchcomputed: max deviation=$variance%, tolerance=$VARIANCE_ACCEPTED%";
+	echo "[WARNING] RSD is above threshold, unsafe performance measurement";
+	echo "        => RSD=$rsd%, tolerance=$RSD_THRESHOLD%";
     else
-	echo "[INFO] Maximal deviation from arithmetic mean of 3 average runs: $variance%";
+	echo "[INFO] RSD from arithmetic mean of $BATCH_SIZE_AFTER_FILTER average runs: $rsd%";
     fi;
     PROCESSED_TIME="$time";
     #rm -f avg.out;
 }
 
-echo "[INFO] Running 5 times $1..."
-echo "[INFO] Maximal variance authorized on 3 average runs: $VARIANCE_ACCEPTED%...";
+echo "[INFO] Running $BATCH_SIZE times $1..."
+echo "[INFO] Maximal RSD authorized on $BATCH_SIZE_AFTER_FILTER average runs: $RSD_THRESHOLD%...";
 
 $@ > ____tempfile.data.polybench;
-$@ >> ____tempfile.data.polybench;
-$@ >> ____tempfile.data.polybench;
-$@ >> ____tempfile.data.polybench;
-$@ >> ____tempfile.data.polybench;
+for ((i=0;i<$BATCH_SIZE-1;i++)); do
+	$@ >> ____tempfile.data.polybench;
+done
 
 compute_mean_exec_time "____tempfile.data.polybench" "$1";
 echo "[INFO] Normalized time: $PROCESSED_TIME";
