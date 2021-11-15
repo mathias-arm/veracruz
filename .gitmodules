@@ -27,3 +27,10 @@
 	path = benchmark/veracruz-examples
 	url = https://github.com/gbryant-arm/veracruz-examples
 	branch = video-object-detection
+[submodule "benchmark/wasmtime-upstream"]
+	path = benchmark/wasmtime-upstream
+	url = https://github.com/bytecodealliance/wasmtime
+[submodule "benchmark/wasmtime-veracruz"]
+	path = benchmark/wasmtime-veracruz
+	url = https://github.com/veracruz-project/wasmtime.git
+	branch = veracruz
