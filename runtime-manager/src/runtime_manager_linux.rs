@@ -112,6 +112,10 @@ pub fn linux_main() -> Result<(), RuntimeManagerError> {
         RuntimeManagerError::IOError(ioerr)
     })?;
 
+    // Configure TCP to flush buffers immediately. This reduces latency when
+    // dealing with small packets
+    fd.set_nodelay(true);
+
     info!("TCP listener connected on {:?}.", client_addr);
 
     let mut abort = false;

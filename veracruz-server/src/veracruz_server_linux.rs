@@ -423,6 +423,10 @@ pub mod veracruz_server_linux {
                 VeracruzServerError::IOError(e)
             })?;
 
+            // Configure TCP to flush buffers immediately. This reduces latency
+            // when dealing with small packets
+            fd.set_nodelay(true);
+
             info!(
                 "Connected to Runtime Manager enclave at address {}.",
                 runtime_manager_address
