@@ -71,7 +71,7 @@ impl NitroEnclave {
             "--cpu-count",
             "2",
             "--memory",
-            "256",
+            "1024",
         ];
         if debug {
             args.push("--debug-mode=true");
