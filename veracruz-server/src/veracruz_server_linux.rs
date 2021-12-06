@@ -333,6 +333,23 @@ pub mod veracruz_server_linux {
             })?;
 
             info!("Response to attestation message received from runtime manager enclave.");
+
+            match received {
+                RuntimeManagerMessage::AttestationData(attest) => {
+                    info!(
+                        "Response to attestation message successfully received ({} bytes).",
+                        attest.len()
+                    );
+                }
+                otherwise => {
+                    error!(
+                        "Unexpected response received from runtime manager enclave: {:?}.",
+                        otherwise
+                    );
+
+                    return Err(VeracruzServerError::InvalidRuntimeManagerMessage(otherwise));
+                }
+            }
         }
 
         #[inline]
