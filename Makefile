@@ -99,7 +99,6 @@ veracruz-server-test/proxy-attestation-server.db: $(wildcard sgx-root-enclave/cs
 linux: sdk
 	pwd
 	RUSTFLAGS=$(LINUX_RUST_FLAG) $(MAKE) -C runtime-manager linux
-	RUSTFLAGS=$(LINUX_RUST_FLAG) $(MAKE) -C linux-root-enclave linux
 
 linux-cli:
 	# build CLIs in top-level crates
