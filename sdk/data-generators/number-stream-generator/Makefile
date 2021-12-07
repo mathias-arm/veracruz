@@ -35,7 +35,7 @@ $(TARGET_DAT):
 clean:
 	cargo clean
 	rm -f *.dat
-	rm -f $(TARGET_DIR_DAT)
+	rm -rf $(TARGET_DIR_DAT)
 
 fmt:
 	cargo fmt

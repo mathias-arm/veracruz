@@ -6,15 +6,13 @@ name = "policy-utils"
 version = "0.3.0"
 
 [features]
-icecap = ["ring"]
+icecap = []
 std = [
   "hex/std",
-  "ring",
   "rustls",
   "serde/std",
   "serde_json/std",
   "x509-parser",
-  "wasi-types/std"
 ]
 
 [dependencies]
