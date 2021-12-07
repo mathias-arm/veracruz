@@ -29,6 +29,23 @@ use veracruz_utils::platform::vm::{RuntimeManagerMessage, VMStatus};
 
 /// Incoming address to listen on.  Note that `0.0.0.0` implies all addresses.
 const INCOMING_ADDRESS: &'static str = "0.0.0.0";
+/// The runtime manager enclave's private key.
+///
+/// *WARNING*: this is complete insecure.
+///
+/// Note that each instance of the Linux runtime manager has the same private
+/// key.  This is because the attestation process on Linux is not fully
+/// implemented, and nor can it ever really be without relying on e.g., the
+/// presence of a hardware root of trust and a measured boot.  As a result, we
+/// have "mocked" the Linux attestation process here, using the same private key
+/// for all Linux runtime enclaves as a simple way of implementing the dummy
+/// attestation process, rather than autogenerating a new key for each instance.
+/// For a real implementation of attestation, see the implementation for AWS
+/// Nitro Enclaves.
+static ROOT_PRIVATE_KEY: [u8; 32] = [
+    0xe6, 0xbf, 0x1e, 0x3d, 0xb4, 0x45, 0x42, 0xbe, 0xf5, 0x35, 0xe7, 0xac, 0xbc, 0x2d, 0x54, 0xd0,
+    0xba, 0x94, 0xbf, 0xb5, 0x47, 0x67, 0x2c, 0x31, 0xc1, 0xd4, 0xee, 0x1c, 0x05, 0x76, 0xa1, 0x44,
+];
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialization.
@@ -36,11 +53,7 @@ const INCOMING_ADDRESS: &'static str = "0.0.0.0";
 
 /// Initializes the runtime manager, bringing up a new session manager instance
 /// with the `policy_json` encoding of the policy file.
-fn initialize(
-    policy_json: String,
-    _challenge: Vec<u8>,
-    _challenge_id: i32,
-) -> RuntimeManagerMessage {
+fn initialize(policy_json: String) -> RuntimeManagerMessage {
     if let Err(e) = init_session_manager() {
         error!(
             "Failed to initialize session manager.  Error produced: {:?}.",
@@ -59,6 +72,14 @@ fn initialize(
     info!("Session manager initialized with policy.");
 
     RuntimeManagerMessage::Status(VMStatus::Success)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Native attestation (dummy implementation).
+////////////////////////////////////////////////////////////////////////////////
+
+fn native_attestation(csr: Vec<u8>, challenge: Vec<u8>) -> Result<Vec<u8>, RuntimeManagerError> {
+    unimplemented!()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,13 +157,16 @@ pub fn linux_main() -> Result<(), RuntimeManagerError> {
         info!("Received message: {:?}.", received_message);
 
         let return_message = match received_message {
-            RuntimeManagerMessage::Initialize(policy_json, challenge, challenge_id) => {
-                info!("Initializing enclave.");
+            RuntimeManagerMessage::Initialize(policy_json) => {
+                info!("Initializing enclave with policy: {:?}.", policy_json);
 
-                initialize(policy_json, challenge, challenge_id)
+                initialize(policy_json)
             }
-            RuntimeManagerMessage::GetCSR => {
-                info!("Obtaining certificate signing request.");
+            RuntimeManagerMessage::Attestation(challenge, _challenge_id) => {
+                info!(
+                    "Generating attestation data from challenge {:?}.",
+                    challenge
+                );
 
                 let csr = generate_csr().map_err(|e| {
                     error!(
@@ -153,7 +177,16 @@ pub fn linux_main() -> Result<(), RuntimeManagerError> {
                     e
                 })?;
 
-                RuntimeManagerMessage::GeneratedCSR(csr)
+                let token = native_attestation(csr, challenge).map_err(|e| {
+                    error!(
+                        "Failed to generate native attestation token.  Error produced: {:?}.",
+                        e
+                    );
+
+                    e
+                })?;
+
+                RuntimeManagerMessage::AttestationData(token)
             }
             RuntimeManagerMessage::SetCertificateChain(chain) => {
                 info!("Setting certificate chain.");
