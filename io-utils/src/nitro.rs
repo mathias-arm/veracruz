@@ -73,9 +73,8 @@ impl NitroEnclave {
             "--memory",
             "2048",
         ];
-        if debug {
-            args.push("--debug-mode=true");
-        }
+        // Launch Nitro enclave in debug mode anyway for benchmarking purposes
+        args.push("--debug-mode=true");
         let nitro_cli_path = {
             match nitro_sbin {
                 true => "/usr/sbin/nitro-cli",
