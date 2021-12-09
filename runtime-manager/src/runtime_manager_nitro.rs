@@ -13,6 +13,7 @@ use io_utils::{
     raw_fd::{receive_buffer, send_buffer},
     vsocket,
 };
+use log::info;
 use nix::sys::socket::listen as listen_vsock;
 use nix::sys::socket::{accept, bind, SockAddr};
 use nix::sys::socket::{socket, AddressFamily, SockFlag, SockType};
