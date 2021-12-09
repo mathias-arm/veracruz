@@ -56,9 +56,9 @@ nitro-cli:
 	pwd
 	RUSTFLAGS=$(NITRO_RUST_FLAG) $(MAKE) -C runtime-manager nitro
 	# build CLIs in top-level crates
-	cd proxy-attestation-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli
-	cd veracruz-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli
-	cd veracruz-client && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli
+	cd proxy-attestation-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
+	cd veracruz-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
+	cd veracruz-client && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
 	# build CLIs in the SDK/test-collateral
 	$(MAKE) -C sdk/freestanding-execution-engine
 	$(MAKE) -C sdk/wasm-checker
@@ -103,9 +103,9 @@ linux: sdk
 
 linux-cli:
 	# build CLIs in top-level crates
-	cd proxy-attestation-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli
-	cd veracruz-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli
-	cd veracruz-client && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli
+	cd proxy-attestation-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
+	cd veracruz-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
+	cd veracruz-client && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
 	# build CLIs in the SDK/test-collateral
 	$(MAKE) -C sdk/freestanding-execution-engine
 	$(MAKE) -C sdk/wasm-checker
