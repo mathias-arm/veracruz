@@ -47,7 +47,7 @@ linux-veracruz-client-test: linux linux-test-collateral
 nitro-test-collateral:
 	TEE=nitro $(MAKE) -C test-collateral
 
-nitro: sdk
+nitro:
 	rustup target add x86_64-unknown-linux-musl
 	RUSTFLAGS=$(NITRO_RUST_FLAG) $(MAKE) -C runtime-manager nitro
 
@@ -59,10 +59,6 @@ nitro-cli:
 	cd proxy-attestation-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
 	cd veracruz-server && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
 	cd veracruz-client && RUSTFLAGS=$(NITRO_RUST_FLAG) cargo build --features nitro --features cli --release
-	# build CLIs in the SDK/test-collateral
-	$(MAKE) -C sdk/freestanding-execution-engine
-	$(MAKE) -C sdk/wasm-checker
-	$(MAKE) -C test-collateral/generate-policy
 
 %-cli-install: %-cli
 	# install to Cargo's bin directory
@@ -96,7 +92,7 @@ veracruz-test/proxy-attestation-server.db: $(wildcard sgx-root-enclave/css.bin)
 veracruz-server-test/proxy-attestation-server.db: $(wildcard sgx-root-enclave/css.bin)
 	cd veracruz-server-test && \
 		bash ../test-collateral/populate-test-database.sh
-linux: sdk
+linux:
 	pwd
 	RUSTFLAGS=$(LINUX_RUST_FLAG) $(MAKE) -C runtime-manager linux
 	RUSTFLAGS=$(LINUX_RUST_FLAG) $(MAKE) -C linux-root-enclave linux
@@ -106,10 +102,6 @@ linux-cli:
 	cd proxy-attestation-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
 	cd veracruz-server && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
 	cd veracruz-client && RUSTFLAGS=$(LINUX_RUST_FLAG) cargo build --features linux --features cli --release
-	# build CLIs in the SDK/test-collateral
-	$(MAKE) -C sdk/freestanding-execution-engine
-	$(MAKE) -C sdk/wasm-checker
-	$(MAKE) -C test-collateral/generate-policy
 
 nitro-veracruz-server-test: nitro nitro-test-collateral veracruz-server-test/proxy-attestation-server.db
 	cd veracruz-server-test \
