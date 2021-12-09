@@ -23,6 +23,7 @@ use std::{
     process::{Child, Command, ExitStatus},
     result,
     string::ToString,
+    time::SystemTime,
 };
 use veracruz_utils::platform::icecap::message::{Header, Request, Response};
 
@@ -177,20 +178,29 @@ impl VeracruzServer for VeracruzServerIceCap {
         let policy: Policy = Policy::from_json(policy_json)?;
 
         let configuration = Configuration::from_env()?;
+        let mut now = SystemTime::now();
         configuration.destroy_realm()?; // HACK clean up in case of previous failure
+        println!("------ Veracruz ServerIceCap: Time to destroy realm: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         configuration.create_realm()?;
+        println!("------ Veracruz ServerIceCap: Time to create realm: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let realm_process = configuration.run_realm()?;
+        println!("------ Veracruz ServerIceCap: Time to run realm: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let realm_channel = OpenOptions::new()
             .read(true)
             .write(true)
             .open(&configuration.realm_endpoint)
             .map_err(IceCapError::hoist(IceCapError::RealmChannelError))?;
+        println!("------ Veracruz ServerIceCap: Time to open realm channel: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         let server = Self {
             configuration,
             realm_channel,
             realm_process,
         };
 
+        let now = SystemTime::now();
         match server.send(&Request::Initialize {
             policy_json: policy_json.to_string(),
         })? {
@@ -251,6 +261,7 @@ impl VeracruzServer for VeracruzServerIceCap {
                 ))
             }
         }
+        println!("------ Veracruz ServerIceCap: Time to attest to proxy attestation server and get certificate chain: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
         Ok(server)
     }

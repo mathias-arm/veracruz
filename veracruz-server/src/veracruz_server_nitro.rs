@@ -19,6 +19,7 @@ pub mod veracruz_server_nitro {
     };
     use policy_utils::policy::Policy;
     use std::io::Read;
+    use std::time::SystemTime;
     use veracruz_utils::platform::vm::{RuntimeManagerMessage, VMStatus};
 
     const RUNTIME_MANAGER_EIF_PATH: &str = "../runtime-manager/runtime_manager.eif";
@@ -36,6 +37,7 @@ pub mod veracruz_server_nitro {
             // Set up, initialize Nitro Root Enclave
             let policy: Policy = Policy::from_json(policy_json)?;
 
+            let mut now = SystemTime::now();
             let (challenge_id, challenge) = send_proxy_attestation_server_start(
                 policy.proxy_attestation_server_url(),
                 PROXY_ATTESTATION_PROTOCOL,
@@ -49,8 +51,10 @@ pub mod veracruz_server_nitro {
 
                 VeracruzServerError::HttpError(e)
             })?;
+            println!("------ Veracruz ServerNitro: Time to start proxy attestation server: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
             println!("VeracruzServerNitro::new instantiating Runtime Manager");
+            let now = SystemTime::now();
             #[cfg(feature = "debug")]
             let runtime_manager_enclave = {
                 println!("Starting Runtime Manager enclave in debug mode");
@@ -63,6 +67,7 @@ pub mod veracruz_server_nitro {
                 NitroEnclave::new(false, RUNTIME_MANAGER_EIF_PATH, false)
                     .map_err(|err| VeracruzServerError::NitroError(err))?
             };
+            println!("------ Veracruz ServerNitro: Time to start runtime manager (we don't know it's running yet, so we wait 10s): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             println!("VeracruzServerNitro::new NitroEnclave::new returned");
             let meta = Self {
                 enclave: runtime_manager_enclave,
@@ -70,6 +75,7 @@ pub mod veracruz_server_nitro {
             println!("VeracruzServerNitro::new Runtime Manager instantiated. Calling initialize");
             std::thread::sleep(std::time::Duration::from_millis(10000));
 
+            let now = SystemTime::now();
             let attesstation_doc = {
                 let attestation = RuntimeManagerMessage::Attestation(challenge, challenge_id);
                 meta.enclave
@@ -91,7 +97,9 @@ pub mod veracruz_server_nitro {
                 &attesstation_doc,
                 challenge_id,
             )?;
+            println!("------ Veracruz ServerNitro: Time to attest to the server: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
+            let now = SystemTime::now();
             let initialize: RuntimeManagerMessage =
                 RuntimeManagerMessage::Initialize(policy_json.to_string(), cert_chain);
 
@@ -111,6 +119,7 @@ pub mod veracruz_server_nitro {
                 _ => return Err(VeracruzServerError::VMStatus(status)),
             }
             println!("VeracruzServerNitro::new complete. Returning");
+            println!("------ Veracruz ServerNitro: Time to send Initialize message to the RM and get the response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             return Ok(meta);
         }
 

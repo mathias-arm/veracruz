@@ -21,6 +21,7 @@ pub mod veracruz_server_linux {
         process::{Child, Command},
         thread::sleep,
         time::Duration,
+        time::SystemTime,
     };
 
     use crate::{veracruz_server::VeracruzServer, VeracruzServerError};
@@ -66,6 +67,7 @@ pub mod veracruz_server_linux {
         /// to be as liberal in ignoring erroneous conditions as possible in order to kill as
         /// many things as we can.
         fn teardown(&mut self) -> Result<bool, VeracruzServerError> {
+            let mut now = SystemTime::now();
             info!("Tearing down Linux Root enclave, and all Runtime Manager enclaves spawned.");
 
             info!("Sending shutdown message.");
@@ -85,7 +87,7 @@ pub mod veracruz_server_linux {
 
             info!("Response received.");
 
-            match response {
+            let x = match response {
                 LinuxRootEnclaveResponse::ShuttingDown => {
                     info!("Linux Root enclave and Runtime Manager enclaves killed.");
                     info!("Closing TCP connections.");
@@ -114,7 +116,9 @@ pub mod veracruz_server_linux {
 
                     Ok(true)
                 }
-            }
+            };
+            println!("------ Veracruz ServerLinux: Time to tear down Linux Root enclave and all Runtime Manager enclaves: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+            x
         }
 
         /// Returns `Ok(true)` iff further TLS data can be read from the socket
@@ -294,6 +298,7 @@ pub mod veracruz_server_linux {
                 proxy_attestation_server_url
             );
 
+            let mut now = SystemTime::now();
             let mut linux_root_process = Command::new(linux_root_enclave_path)
                 .arg("--proxy-attestation-server")
                 .arg(proxy_attestation_server_url)
@@ -307,6 +312,7 @@ pub mod veracruz_server_linux {
                     VeracruzServerError::IOError(e)
                 })?;
 
+            println!("------ Veracruz ServerLinux: Time to launch Linux Root enclave & about to sleep for {:?} seconds: {}", LINUX_ROOT_ENCLAVE_SPAWN_DELAY_SECONDS, SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             info!(
                 "Linux Root enclave spawned.  Waiting {:?} seconds...",
                 LINUX_ROOT_ENCLAVE_SPAWN_DELAY_SECONDS
@@ -322,6 +328,7 @@ pub mod veracruz_server_linux {
                 linux_root_enclave_address
             );
 
+            let now = SystemTime::now();
             let mut linux_root_socket =
                 TcpStream::connect(linux_root_enclave_address).map_err(|error| {
                     error!(
@@ -337,6 +344,7 @@ pub mod veracruz_server_linux {
                     error
                 })?;
 
+            println!("------ Veracruz ServerLinux: Time to connect to Linux Root enclave: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             info!(
                 "Now connected to Linux Root enclave on: {:?}.",
                 linux_root_socket.peer_addr()
@@ -344,6 +352,7 @@ pub mod veracruz_server_linux {
 
             info!("Requesting spawning of new Runtime Enclave.");
 
+            let now = SystemTime::now();
             send_message(
                 &mut linux_root_socket,
                 &LinuxRootEnclaveMessage::SpawnNewApplicationEnclave,
@@ -374,8 +383,10 @@ pub mod veracruz_server_linux {
                     ));
                 };
 
+            println!("------ Veracruz ServerLinux: Time to send msg to Linux Root enclave to spawn runtime enclave (round trip): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             info!("Requesting proxy attestation start.");
 
+            let now = SystemTime::now();
             send_message(
                 &mut linux_root_socket,
                 &LinuxRootEnclaveMessage::StartProxyAttestation,
@@ -416,7 +427,9 @@ pub mod veracruz_server_linux {
                 "Establishing connection with new Runtime Manager enclave on address: {}.",
                 runtime_manager_address
             );
+            println!("------ Veracruz ServerLinux: Time to send startProxyAttestation msg to Linux Root enclave (round trip): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
+            let now = SystemTime::now();
             let mut runtime_manager_socket = TcpStream::connect(&runtime_manager_address).map_err(|e| {
                 error!("Failed to connect to Runtime Manager enclave at address {}.  Error produced: {}.", runtime_manager_address, e);
 
@@ -432,8 +445,10 @@ pub mod veracruz_server_linux {
                 runtime_manager_address
             );
 
+            println!("------ Veracruz ServerLinux: Time to connect to RM (round trip): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
             info!("Sending Initialize message.");
 
+            let now = SystemTime::now();
             send_message(
                 &mut runtime_manager_socket,
                 &RuntimeManagerMessage::Initialize(policy.to_string(), challenge, challenge_id),
@@ -464,9 +479,11 @@ pub mod veracruz_server_linux {
                     return Err(VeracruzServerError::RuntimeManagerMessageStatus(otherwise));
                 }
             };
+            println!("------ Veracruz ServerLinux: Time to send Initialize msg to RM (round trip): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
             info!("Requesting certificate signing request (CSR).");
 
+            let now = SystemTime::now();
             send_message(&mut runtime_manager_socket, &RuntimeManagerMessage::GetCSR)
                 .map_err(VeracruzServerError::SocketError)?;
 
@@ -610,6 +627,7 @@ pub mod veracruz_server_linux {
                     Err(VeracruzServerError::RuntimeManagerMessageStatus(otherwise))
                 }
             };
+            println!("------ Veracruz ServerLinux: Time to attest: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         }
 
         #[inline]
