@@ -282,7 +282,7 @@ pub mod veracruz_server_nitro {
             VeracruzServerError::HttpError(e)
         })?;
 
-        println!(
+        info!(
             "veracruz-server-nitro::post_psa_attestation_token received buffer:{:?}",
             received_body
         );
