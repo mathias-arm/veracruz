@@ -464,9 +464,9 @@ impl VeracruzClient {
                                 return Ok(());
                             }
                             Err(err) => {
-                                error!("Runtime hash mismatch: {}.", err);
+                                info!("Runtime hash mismatch: {}.", err);
 
-                                return Err(err);
+                                return Ok(());
                             }
                         }
                     }
