@@ -17,6 +17,7 @@ pub mod veracruz_server_nitro {
         http::{post_buffer, send_proxy_attestation_server_start, HttpError},
         nitro::NitroEnclave,
     };
+    use log::info;
     use policy_utils::policy::Policy;
     use std::io::Read;
     use std::time::SystemTime;
@@ -97,7 +98,7 @@ pub mod veracruz_server_nitro {
                 &attesstation_doc,
                 challenge_id,
             )?;
-            println!("------ Veracruz ServerNitro: Time to attest to the server: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+            println!("------ Veracruz ServerNitro: Time to send Attestation msg & get response (documentation): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
             let now = SystemTime::now();
             let initialize: RuntimeManagerMessage =
