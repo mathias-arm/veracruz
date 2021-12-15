@@ -43,13 +43,24 @@ struct Config {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Badges {
     virtio_console_server_ring_buffer: Badge,
+    event: Notification,
+    event_server_endpoint: Endpoint,
+    event_server_bitfield: usize,
+    channel: RingBufferConfig,
+    supervisor_ep: Endpoint,
 }
+
+static mut SUPERVISOR_EP: Option<Endpoint> = None;
 
 fn main(config: Config) -> Fallible<()> {
     // TODO why do we need this?
     icecap_runtime_init();
 
     debug_println!("icecap-realmos: initializing...");
+
+    unsafe {
+        SUPERVISOR_EP = Some(config.supervisor_ep);
+    }
 
     // enable ring buffer to serial-server
     let virtio_console_client =
@@ -294,8 +305,7 @@ mod attestation_hack {
 
 // Dependencies depend on these C symbols. We define them here in Rust.
 mod c_hack {
-
-    use super::alloc::boxed::Box;
+    use super::*;
 
     #[no_mangle]
     extern "C" fn fmod(x: f64, y: f64) -> f64 {
@@ -323,5 +333,56 @@ mod c_hack {
                 Box::<u8>::from_raw(ptr as *mut u8);
             }
         }
+    }
+
+
+    #[no_mangle]
+    extern "C" fn mmap(
+        addr: *mut libc::c_void,
+        len: libc::size_t,
+        prot: libc::c_int,
+        flags: libc::c_int,
+        fd: libc::c_int,
+        offset: libc::size_t,
+    ) -> *mut libc::c_void {
+        let addr = if len < 0x1000000 {
+            // for small allocations we can just use our heap
+            //
+            // HACK we've mapped our heap as executable for now since
+            // JITed code ends up here
+            //
+            calloc(len, 1)
+        } else {
+            // send mmap request
+            match RPCClient::new(unsafe { SUPERVISOR_EP.unwrap() })
+                .call::<MmapResponse>(&MmapRequest::MmapRequest(MmapMmapRequest {
+                    addr: addr as size_t,
+                    length: len,
+                    prot: prot,
+                    flags: flags,
+                    fd: fd,
+                    offset: offset,
+                }))
+            {
+                MmapResponse::MmapResponse(addr) => addr as *mut c_void,
+                MmapResponse::MunmapResponse(addr) => panic!("unexpected response"),
+            }
+        };
+
+        addr
+    }
+
+    #[no_mangle]
+    extern "C" fn munmap(
+        addr: *mut libc::c_void,
+        len: libc::size_t
+    ) -> libc::c_int {
+        let addr = if len < 0x1000000 {
+            free(addr);
+        } else {
+            // TODO
+        };
+
+        0
     }
 }

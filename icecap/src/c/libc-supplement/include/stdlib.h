@@ -16,5 +16,10 @@
 
 void *calloc(size_t nelem, size_t elsize);
 void exit(int status);
+
+static inline void *malloc(size_t nelem) {
+    return calloc(nelem, 1);
+}
+
 void free(void *ptr);
 int rand(void);

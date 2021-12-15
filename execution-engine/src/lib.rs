@@ -28,7 +28,7 @@ mod wasi;
 // Expose the error to the external.
 pub use wasi::common::FatalEngineError;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "icecap"))]
 use crate::wasi::wasmtime::WasmtimeRuntimeState;
 use crate::{
     fs::FileSystem,
@@ -84,7 +84,7 @@ pub fn execute(
         }
         ExecutionStrategy::JIT => {
             cfg_if::cfg_if! {
-                if #[cfg(any(feature = "std", feature = "nitro"))] {
+                if #[cfg(any(feature = "std", feature = "nitro", feature = "icecap"))] {
                     Box::new(WasmtimeRuntimeState::new(filesystem, options.enable_clock)?)
                 } else {
                     return Err(FatalEngineError::EngineIsNotReady);

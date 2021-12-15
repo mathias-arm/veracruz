@@ -12,5 +12,5 @@
 pub mod common;
 pub mod strace;
 pub(crate) mod wasmi;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "icecap"))]
 pub(crate) mod wasmtime;

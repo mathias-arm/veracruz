@@ -11,6 +11,7 @@
 
 #![allow(clippy::too_many_arguments)]
 
+use anyhow;
 use crate::{
     fs::{FileSystem, FileSystemResult},
     wasi::common::{
@@ -29,7 +30,7 @@ use std::{
 use wasi_types::ErrNo;
 use wasmtime::{
     AsContext, AsContextMut, Caller, Config, Engine, ExternType, Linker, Memory, Module, Store,
-    StoreContext, StoreContextMut, ValType,
+    StoreContext, StoreContextMut, Trap, ValType,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1012,7 +1013,7 @@ impl WasmtimeRuntimeState {
         Self::convert_to_errno(vfs.poll_oneoff(&mut caller, subscriptions, events, size, address))
     }
 
-    fn wasi_proc_exit(mut caller: CallerWrapper<'_>, exit_code: u32) {
+    fn wasi_proc_exit(mut caller: CallerWrapper<'_>, exit_code: u32) -> Result<(), Trap> {
         let caller_data = &caller.data().clone();
         let mut vfs = match caller_data.lock() {
             Ok(v) => v,
@@ -1020,6 +1021,8 @@ impl WasmtimeRuntimeState {
         };
 
         vfs.proc_exit(&mut caller, exit_code);
+        // proc_exit doesn't return, we can map that into wasmtime by raising an exit trap
+        Err(Trap::i32_exit(exit_code as i32))
     }
 
     fn wasi_proc_raise(mut caller: CallerWrapper<'_>, signal: u32) -> u32 {
