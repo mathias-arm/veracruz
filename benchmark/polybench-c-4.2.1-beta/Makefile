@@ -6,7 +6,7 @@ WASM_CXX=$(WASI_SDK_ROOT)/bin/clang++ --sysroot=$(WASI_SDK_SYSROOT) $(CLANG_FLAG
 WASM_CXX=$(WASM_CC)
 #CXX=$(CC)
 
-CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-writable-strings -fPIC
+CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-writable-strings -fPIC -DEXTRALARGE_DATASET
 CFLAGS_WASM=$(CFLAGS) -msimd128 -D_WASI_EMULATED_PROCESS_CLOCKS
 OPTS=-Ofast
 #OPTS=-O0 -g
