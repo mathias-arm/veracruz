@@ -74,7 +74,6 @@ pub mod veracruz_server_nitro {
                 enclave: runtime_manager_enclave,
             };
             println!("VeracruzServerNitro::new Runtime Manager instantiated. Calling initialize");
-            std::thread::sleep(std::time::Duration::from_millis(10000));
 
             let now = SystemTime::now();
             let attesstation_doc = {
