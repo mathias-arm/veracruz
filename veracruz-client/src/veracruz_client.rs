@@ -18,6 +18,7 @@ use std::{
     io::{Read, Write},
     path::Path,
     str::from_utf8,
+    time::SystemTime,
 };
 use veracruz_utils::VERACRUZ_RUNTIME_HASH_EXTENSION_ID;
 use webpki;
@@ -232,17 +233,25 @@ impl VeracruzClient {
         path: P,
         program: &[u8],
     ) -> Result<(), VeracruzClientError> {
+        let mut now = SystemTime::now();
         self.check_policy_hash()?;
         self.check_runtime_hash()?;
+        println!("------ Veracruz Client: Time to check hashes (policy and runtime): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
         let path = enforce_leading_backslash(
             path.as_ref()
                 .to_str()
                 .ok_or(VeracruzClientError::InvalidPath)?,
         );
+        let now = SystemTime::now();
         let serialized_program = transport_protocol::serialize_program(&program, &path)?;
+        println!("------ Veracruz Client: Time to serialize data: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let response = self.send(&serialized_program)?;
+        println!("------ Veracruz Client: Time to send message & receive response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let parsed_response = transport_protocol::parse_runtime_manager_response(&response)?;
+        println!("------ Veracruz Client: Time to deserialize response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         let status = parsed_response.get_status();
         match status {
             transport_protocol::ResponseStatus::SUCCESS => return Ok(()),
@@ -258,18 +267,26 @@ impl VeracruzClient {
         path: P,
         data: &[u8],
     ) -> Result<(), VeracruzClientError> {
+        let mut now = SystemTime::now();
         self.check_policy_hash()?;
         self.check_runtime_hash()?;
+        println!("------ Veracruz Client: Time to check hashes (policy and runtime): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
         let path = enforce_leading_backslash(
             path.as_ref()
                 .to_str()
                 .ok_or(VeracruzClientError::InvalidPath)?,
         );
+        let now = SystemTime::now();
         let serialized_data = transport_protocol::serialize_program_data(&data, &path)?;
+        println!("------ Veracruz Client: Time to serialize data: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let response = self.send(&serialized_data)?;
+        println!("------ Veracruz Client: Time to send message & receive response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
+        let now = SystemTime::now();
         let parsed_response = transport_protocol::parse_runtime_manager_response(&response)?;
+        println!("------ Veracruz Client: Time to deserialize response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         let status = parsed_response.get_status();
         match status {
             transport_protocol::ResponseStatus::SUCCESS => return Ok(()),
@@ -285,18 +302,26 @@ impl VeracruzClient {
         &mut self,
         path: P,
     ) -> Result<Vec<u8>, VeracruzClientError> {
+        let mut now = SystemTime::now();
         self.check_policy_hash()?;
         self.check_runtime_hash()?;
+        println!("------ Veracruz Client: Time to check hashes (policy and runtime): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
         let path = enforce_leading_backslash(
             path.as_ref()
                 .to_str()
                 .ok_or(VeracruzClientError::InvalidPath)?,
         );
+        let now = SystemTime::now();
         let serialized_read_result = transport_protocol::serialize_request_result(&path)?;
+        println!("------ Veracruz Client: Time to serialize data: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let response = self.send(&serialized_read_result)?;
+        println!("------ Veracruz Client: Time to send message & receive response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
+        let now = SystemTime::now();
         let parsed_response = transport_protocol::parse_runtime_manager_response(&response)?;
+        println!("------ Veracruz Client: Time to deserialize response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         let status = parsed_response.get_status();
         if status != transport_protocol::ResponseStatus::SUCCESS {
             return Err(VeracruzClientError::ResponseError(
@@ -313,18 +338,26 @@ impl VeracruzClient {
 
     /// Check the policy and runtime hashes, and read the result at the remote `path`.
     pub fn get_results<P: AsRef<Path>>(&mut self, path: P) -> Result<Vec<u8>, VeracruzClientError> {
+        let mut now = SystemTime::now();
         self.check_policy_hash()?;
         self.check_runtime_hash()?;
+        println!("------ Veracruz Client: Time to check hashes (policy and runtime): {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
         let path = enforce_leading_backslash(
             path.as_ref()
                 .to_str()
                 .ok_or(VeracruzClientError::InvalidPath)?,
         );
+        let now = SystemTime::now();
         let serialized_read_result = transport_protocol::serialize_read_file(&path)?;
+        println!("------ Veracruz Client: Time to serialize data: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
+        let now = SystemTime::now();
         let response = self.send(&serialized_read_result)?;
+        println!("------ Veracruz Client: Time to send message & receive response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
 
+        let now = SystemTime::now();
         let parsed_response = transport_protocol::parse_runtime_manager_response(&response)?;
+        println!("------ Veracruz Client: Time to deserialize response: {}", SystemTime::now().duration_since(now).unwrap().as_micros() as f64 / 1000.0);
         let status = parsed_response.get_status();
         if status != transport_protocol::ResponseStatus::SUCCESS {
             return Err(VeracruzClientError::ResponseError("get_result", status));
