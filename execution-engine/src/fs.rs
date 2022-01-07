@@ -37,6 +37,14 @@ use wasi_types::{
     FileType, Inode, LookupFlags, OpenFlags, PreopenType, Prestat, RiFlags, Rights, RoFlags,
     SdFlags, SetTimeFlags, SiFlags, Size, Subscription, Timestamp, Whence,
 };
+use platform_services::{getclocktime, result};
+
+fn get_time() -> FileSystemResult<u64> {
+    match getclocktime(0) {
+        result::Result::Success(timespec) => Ok(timespec),
+        _otherwise => Err(ErrNo::Inval),
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Filesystem errors.
@@ -634,6 +642,7 @@ impl FileSystem {
     /// Rust programs are going to expect that this is true, so we
     /// need to preallocate some files corresponding to those, here.
     pub fn new(rights_table: RightsTable) -> FileSystemResult<Self> {
+        let time = get_time()?;
         let mut rst = Self {
             fd_table: HashMap::new(),
             next_fd_candidate: Self::FIRST_FD,
@@ -647,6 +656,7 @@ impl FileSystem {
         all_rights.insert(PathBuf::from("stderr"), Rights::all());
 
         rst.install_prestat::<PathBuf>(&all_rights)?;
+        println!("------ Filesystem init time: {}", (get_time()? - time) as f64 / 1000000.0);
         Ok(rst)
     }
 
@@ -654,6 +664,7 @@ impl FileSystem {
     /// It return a FileSystem where directories are pre-opened with appropriate
     /// capabilities in related to `principal`.
     pub fn spawn(&self, principal: &Principal) -> FileSystemResult<Self> {
+        let time = get_time()?;
         let mut rst = Self {
             fd_table: HashMap::new(),
             next_fd_candidate: Self::FIRST_FD,
@@ -663,6 +674,7 @@ impl FileSystem {
         // Must clone as install_prestat need to lock the inode_table too
         let rights_table = self.lock_inode_table()?.get_rights(principal)?.clone();
         rst.install_prestat::<PathBuf>(&rights_table)?;
+        println!("------ Spawn a new filesystem handler time: {}", (get_time()? - time) as f64 / 1000000.0);
         Ok(rst)
     }
 
@@ -1508,6 +1520,7 @@ impl FileSystem {
         data: Vec<u8>,
         is_append: bool,
     ) -> FileSystemResult<()> {
+        let time = get_time()?;
         let file_name = file_name.as_ref();
         let (fd, file_name) = self.find_prestat(file_name)?;
 
@@ -1541,6 +1554,7 @@ impl FileSystem {
         }
         self.fd_write(fd, &[data])?;
         self.fd_close(fd)?;
+        println!("------ Time to write_file_by_absolute_path(): {}", (get_time()? - time) as f64 / 1000000.0);
         Ok(())
     }
 

@@ -22,6 +22,14 @@ use std::{
     vec::Vec,
 };
 use wasi_types::ErrNo;
+use platform_services::{getclocktime, result};
+
+fn get_time() -> execution_engine::fs::FileSystemResult<u64> {
+    match getclocktime(0) {
+        result::Result::Success(timespec) => Ok(timespec),
+        _otherwise => Err(ErrNo::Inval),
+    }
+}
 
 pub mod error;
 pub mod execution_engine_manager;
@@ -200,15 +208,18 @@ impl ProtocolState {
             enable_clock: *self.global_policy.enable_clock(),
             ..Default::default()
         };
+        let mut time = get_time()?;
         let program = self
             .read_file(client_id, file_name)?
             .ok_or(RuntimeManagerError::FileSystemError(ErrNo::NoEnt))?;
+        println!("------ Read program file before execution: {}", (get_time()? - time) as f64 / 1000000.0);
         let return_code = execute(
             &execution_strategy,
             self.vfs.spawn(&Principal::Program(file_name.to_string()))?,
             program,
             options,
         )?;
+        println!("------ Execution time (includes JIT compilation, WASI mappings and actual execution of the WASM program): {}", (get_time()? - time) as f64 / 1000000.0);
 
         let response = Self::response_error_code_returned(return_code);
         Ok(Some(response))

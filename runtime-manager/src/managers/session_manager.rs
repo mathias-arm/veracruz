@@ -15,19 +15,30 @@ use rustls::PrivateKey;
 use session_manager::SessionContext;
 use std::{sync::atomic::Ordering, vec::Vec};
 use veracruz_utils::csr;
+use platform_services::{getclocktime, result};
+
+fn get_time() -> Result<u64, RuntimeManagerError> {
+    match getclocktime(0) {
+        result::Result::Success(timespec) => Ok(timespec),
+        _otherwise => Err(RuntimeManagerError::TimeError),
+    }
+}
 
 pub fn init_session_manager() -> Result<(), RuntimeManagerError> {
+    let time = get_time()?;
     let new_session_manager = SessionContext::new()?;
 
     {
         let mut session_manager_state = super::MY_SESSION_MANAGER.lock()?;
         *session_manager_state = Some(new_session_manager);
     }
+    println!("------ Init session manager {}", (get_time()? - time) as f64 / 1000000.0);
 
     Ok(())
 }
 
 pub fn load_policy(policy_json: &str) -> Result<(), RuntimeManagerError> {
+    let time = get_time()?;
     let policy_hash = ring::digest::digest(&ring::digest::SHA256, &policy_json.as_bytes());
     let policy = Policy::from_json(policy_json)?;
 
@@ -51,7 +62,8 @@ pub fn load_policy(policy_json: &str) -> Result<(), RuntimeManagerError> {
             }
         }
     }
-    return Ok(());
+    println!("------ Load policy {}", (get_time()? - time) as f64 / 1000000.0);
+    Ok(())
 }
 
 pub fn load_cert_chain(chain: &Vec<Vec<u8>>) -> Result<(), RuntimeManagerError> {
@@ -70,6 +82,7 @@ pub fn load_cert_chain(chain: &Vec<Vec<u8>>) -> Result<(), RuntimeManagerError> 
 }
 
 pub fn new_session() -> Result<u32, RuntimeManagerError> {
+    let time = get_time()?;
     let local_session_id = super::SESSION_COUNTER.fetch_add(1, Ordering::SeqCst);
 
     let session = match &*super::MY_SESSION_MANAGER.lock()? {
@@ -82,6 +95,7 @@ pub fn new_session() -> Result<u32, RuntimeManagerError> {
     };
 
     super::SESSIONS.lock()?.insert(local_session_id, session);
+    println!("------ Create new session on server side {}", (get_time()? - time) as f64 / 1000000.0);
     Ok(local_session_id)
 }
 

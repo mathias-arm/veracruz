@@ -18,6 +18,14 @@ use std::{collections::HashMap, result::Result, vec::Vec};
 use transport_protocol::transport_protocol::{
     RuntimeManagerRequest as REQUEST, RuntimeManagerRequest_oneof_message_oneof as MESSAGE,
 };
+use platform_services::{getclocktime, result};
+
+fn get_time() -> Result<u64, RuntimeManagerError> {
+    match getclocktime(0) {
+        result::Result::Success(timespec) => Ok(timespec),
+        _otherwise => Err(RuntimeManagerError::TimeError),
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // The buffer of incoming data.
@@ -228,7 +236,8 @@ pub fn dispatch_on_incoming_data(
     client_id: u64,
     input: &Vec<u8>,
 ) -> ProvisioningResult {
-    match parse_incoming_buffer(tls_session_id, input.clone())? {
+    let time = get_time()?;
+    let rst = match parse_incoming_buffer(tls_session_id, input.clone())? {
         None => Ok(None),
         Some(REQUEST {
             message_oneof: None,
@@ -238,5 +247,7 @@ pub fn dispatch_on_incoming_data(
             message_oneof: Some(request),
             ..
         }) => dispatch_on_request(client_id, request),
-    }
+    };
+    println!("------ Dispatch on incoming data, inc. parse incoming buffer and process request {}", (get_time()? - time) as f64 / 1000000.0);
+    rst
 }

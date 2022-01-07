@@ -25,6 +25,7 @@ use std::{
     sync::mpsc,
     sync::{Arc, Mutex},
     thread,
+    time::SystemTime,
 };
 
 type EnclaveHandlerServer = Box<dyn crate::veracruz_server::VeracruzServer + Sync + Send>;
@@ -36,6 +37,7 @@ async fn veracruz_server_request(
     _request: HttpRequest,
     input_data: String,
 ) -> VeracruzServerResponder {
+    let now = SystemTime::now();
     let input_data_decoded = base64::decode(&input_data)?;
 
     let mut enclave_handler_locked = enclave_handler.lock()?;
@@ -51,6 +53,7 @@ async fn veracruz_server_request(
         None => String::new(),
     };
 
+    println!("------ Veracruz Server Request Time: {}", SystemTime::now().duration_since(now).map_err(|e| VeracruzServerError::DirectStrError("time error"))?.as_micros() as f64 / 1000.0);
     Ok(result_string)
 }
 
@@ -119,7 +122,12 @@ pub fn server(policy_json: &str) -> Result<Server, VeracruzServerError> {
     let policy: Policy = serde_json::from_str(policy_json)?;
     #[allow(non_snake_case)]
     let VERACRUZ_SERVER: EnclaveHandler = Arc::new(Mutex::new(Some(Box::new(
-        VeracruzServerEnclave::new(&policy_json)?,
+    {
+        let now = SystemTime::now();
+        let x = VeracruzServerEnclave::new(&policy_json)?;
+        println!("------ Time to spawn new VeracruzServerEnclave (includes attestation with proxy attestation server, enclave init and runtime manager init): {}", SystemTime::now().duration_since(now).map_err(|e| VeracruzServerError::DirectStrError("time error"))?.as_micros() as f64 / 1000.0);
+        x
+    }
     ))));
 
     // create a channel for stop server

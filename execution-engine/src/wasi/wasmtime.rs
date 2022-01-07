@@ -26,6 +26,14 @@ use wasi_types::ErrNo;
 use wasmtime::{
     Caller, Config, Engine, Extern, ExternType, Func, Instance, Memory, Module, Store, Val, ValType,
 };
+use platform_services::{getclocktime, result};
+
+fn get_time() -> Result<u64, ()> {
+    match getclocktime(0) {
+        result::Result::Success(timespec) => Ok(timespec),
+        otherwise => Err(()),
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // The Wasmtime runtime state.
@@ -212,7 +220,10 @@ impl WasmtimeRuntimeState {
         let mut config = Config::default();
         config.wasm_simd(true);
         let engine = Engine::new(&config)?;
+        let mut time = get_time().unwrap();
         let module = Module::new(&engine, binary)?;
+        println!("------ Initialize the WASM module (includes JIT compilation if it's not cached): {}", (get_time().unwrap() - time) as f64 / 1000000.0);
+        let time = get_time().unwrap();
         let store = Store::new(&engine);
         let mut exports: Vec<Extern> = Vec::new();
 
@@ -290,11 +301,15 @@ impl WasmtimeRuntimeState {
             };
             exports.push(Extern::Func(host_call_body))
         }
+        println!("------ Generate WASI mappings: {}", (get_time().unwrap() - time) as f64 / 1000000.0);
 
+        let time = get_time().unwrap();
         let instance = Instance::new(&store, &module, &exports)?;
+        println!("------ Generate instance: {}", (get_time().unwrap() - time) as f64 / 1000000.0);
         let export = instance
             .get_export(WasiWrapper::ENTRY_POINT_NAME)
             .ok_or(FatalEngineError::NoProgramEntryPoint)?;
+        let time = get_time().unwrap();
         let return_from_main = match check_main(&export.ty()) {
             EntrySignature::ArgvAndArgc => export
                 .into_func()
@@ -306,6 +321,7 @@ impl WasmtimeRuntimeState {
                 .call(&[]),
             EntrySignature::NoEntryFound => return Err(FatalEngineError::NoProgramEntryPoint),
         };
+        println!("------ Execute module: {}", (get_time().unwrap() - time) as f64 / 1000000.0);
 
         // NOTE: Surpress the trap, if `proc_exit` is called.
         //       In this case, the error code is in .exit_code().
