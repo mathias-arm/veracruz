@@ -169,10 +169,12 @@ impl ProtocolState {
         client_id: &Principal,
         file_name: &str,
     ) -> Result<Option<Vec<u8>>, RuntimeManagerError> {
-        let rst = self
-            .vfs
-            .spawn(client_id)?
-            .read_file_by_absolute_path(file_name)?;
+        let mut vfs = self.vfs.spawn(client_id)?;
+        let rst = match file_name {
+            "stdout" => vfs.read_stdout()?,
+            "stderr" => vfs.read_stderr()?,
+            _otherwise => vfs.read_file_by_absolute_path(file_name)?,
+        };
         if rst.len() == 0 {
             return Ok(None);
         }

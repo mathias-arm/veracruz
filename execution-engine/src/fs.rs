@@ -1507,7 +1507,7 @@ impl FileSystem {
         file_name: T,
         data: Vec<u8>,
         is_append: bool,
-    ) -> Result<(), ErrNo> {
+    ) -> FileSystemResult<()> {
         let file_name = file_name.as_ref();
         let (fd, file_name) = self.find_prestat(file_name)?;
 
@@ -1550,7 +1550,7 @@ impl FileSystem {
     pub fn read_file_by_absolute_path<T: AsRef<Path>>(
         &mut self,
         file_name: T,
-    ) -> Result<Vec<u8>, ErrNo> {
+    ) -> FileSystemResult<Vec<u8>> {
         let file_name = file_name.as_ref();
         let (fd, file_name) = self.find_prestat(file_name)?;
         let fd = self.path_open(
@@ -1586,7 +1586,7 @@ impl FileSystem {
     pub fn read_all_files_by_absolute_path<T: AsRef<Path>>(
         &mut self,
         path: T,
-    ) -> Result<Vec<(PathBuf, Vec<u8>)>, ErrNo> {
+    ) -> FileSystemResult<Vec<(PathBuf, Vec<u8>)>> {
         let path = path.as_ref();
         // Convert the absolute path to relative path and then find the inode
         let inode = self

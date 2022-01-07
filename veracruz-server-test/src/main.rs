@@ -311,7 +311,7 @@ mod tests {
             &[("/program/read-file.wasm", program_path(READ_FILE_WASM))],
             &[("/input/hello-world-1.dat", data_dir(STRING_1_DATA))],
             &[],
-            &["/output/test/test.txt", "/output/hello-world-1.dat"],
+            &["/output/test/test.txt", "/output/hello-world-1.dat", "stdout"],
         )
         .unwrap();
     }

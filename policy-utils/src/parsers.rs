@@ -67,9 +67,10 @@ pub fn parse_renamable_paths(
 /// mistakes.
 #[cfg(feature = "std")]
 pub fn enforce_leading_backslash(path: &str) -> Cow<str> {
-    if !path.starts_with('/') {
+    /*if !path.starts_with('/') {
         Cow::Owned(format!("/{}", path))
     } else {
         Cow::Borrowed(path)
-    }
+    }*/
+    Cow::Borrowed(path)
 }

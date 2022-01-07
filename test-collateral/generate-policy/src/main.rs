@@ -777,8 +777,7 @@ fn serialize_capability_entry(cap_string: &str) -> FileRights {
         | Rights::PATH_CREATE_DIRECTORY;
 
     let mut split = cap_string.split(':');
-    let file_name = enforce_leading_backslash(
-        split
+    let file_name = split
             .next()
             .expect(&format!("Failed to parse {}, empty string", cap_string))
             .trim(),
@@ -796,8 +795,7 @@ fn serialize_capability_entry(cap_string: &str) -> FileRights {
         // allow "rw" shorthand
         "r" => READ_RIGHTS,
         "w" => WRITE_RIGHTS,
-        "rw" => READ_RIGHTS | WRITE_RIGHTS,
-        "wr" => READ_RIGHTS | WRITE_RIGHTS,
+        "rw" | "wr" => READ_RIGHTS | WRITE_RIGHTS,
         // parse raw WASI rights
         _ => {
             let number = string_number
