@@ -223,6 +223,7 @@ impl WasmtimeRuntimeState {
         let mut time = get_time().unwrap();
         let module = Module::new(&engine, binary)?;
         println!("------ Initialize the WASM module (includes JIT compilation if it's not cached): {}", (get_time().unwrap() - time) as f64 / 1000000.0);
+        let store = Store::new(&engine);
         let time = get_time().unwrap();
         let store = Store::new(&engine);
         let mut exports: Vec<Extern> = Vec::new();
