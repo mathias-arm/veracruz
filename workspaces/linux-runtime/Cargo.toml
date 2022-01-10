@@ -14,7 +14,6 @@ cargo-features = ["resolver"]
 
 [workspace]
 members = [
-  "crates/linux-root-enclave",
   "crates/runtime-manager",
 ]
 resolver = "2"

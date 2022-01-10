@@ -23,14 +23,12 @@ include $(WORKSPACE_DIR)/common.mk
 include $(WORKSPACE_DIR)/shared.mk
 
 CC = CC_x86_64_unknown_linux_gnu=gcc CC_aarch64_unknown_linux_gnu=gcc
-LINUX_ROOT_ENCLAVE = $(WORKSPACE_DIR)/linux-runtime/target/$(PROFILE_PATH)/linux-root-enclave
 RUNTIME_MANAGER_ENCLAVE = $(WORKSPACE_DIR)/linux-runtime/target/$(PROFILE_PATH)/runtime_manager_enclave
 TEST_PARAMETERS = DATABASE_URL=$(PROXY_ATTESTATION_SERVER_DB) \
 	VERACRUZ_POLICY_DIR=$(OUT_DIR) \
 	VERACRUZ_TRUST_DIR=$(OUT_DIR) \
 	VERACRUZ_PROGRAM_DIR=$(OUT_DIR) \
 	VERACRUZ_DATA_DIR=$(OUT_DIR) \
-	LINUX_ROOT_ENCLAVE_PATH=$(LINUX_ROOT_ENCLAVE) \
 	RUNTIME_MANAGER_ENCLAVE_PATH=$(RUNTIME_MANAGER_ENCLAVE)
 
 all: build test-collateral
