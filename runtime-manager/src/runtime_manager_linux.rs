@@ -157,12 +157,11 @@ pub fn linux_main() -> Result<(), RuntimeManagerError> {
         info!("Received message: {:?}.", received_message);
 
         let return_message = match received_message {
-            RuntimeManagerMessage::Initialize(policy_json) => {
+            RuntimeManagerMessage::Initialize(policy_json, challenge, _challenge_id) => {
                 info!("Initializing enclave with policy: {:?}.", policy_json);
 
-                initialize(policy_json)
-            }
-            RuntimeManagerMessage::Attestation(challenge, _challenge_id) => {
+                initialize(policy_json);
+
                 info!(
                     "Generating attestation data from challenge {:?}.",
                     challenge

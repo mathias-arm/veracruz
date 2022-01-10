@@ -89,7 +89,7 @@ pub enum RuntimeManagerMessage {
     /// Vec<u8> - the challenge value
     /// i32     - the challenge ID
     Attestation(Vec<u8>, i32),
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature = "linux"))]
     /// The response to the `Attestation` request.
     /// parameters:
     /// Vec<u8> - The nitro attestation document from the enclave

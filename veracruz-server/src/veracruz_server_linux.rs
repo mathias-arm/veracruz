@@ -14,7 +14,6 @@ pub mod veracruz_server_linux {
 
     use log::{error, info};
 
-    use actix_rt::Runtime;
     use io_utils::http::send_proxy_attestation_server_start;
     use std::{
         env,
@@ -264,6 +263,11 @@ pub mod veracruz_server_linux {
                 VeracruzServerError::HttpError(e)
             })?;
 
+            let runtime_manager_address = format!(
+                "{}:{}",
+                RUNTIME_MANAGER_ENCLAVE_ADDRESS, RUNTIME_MANAGER_ENCLAVE_PORT
+            );
+
             info!(
                 "Establishing connection with new Runtime Manager enclave on address: {}.",
                 runtime_manager_address
@@ -284,21 +288,28 @@ pub mod veracruz_server_linux {
 
             send_message(
                 &mut runtime_manager_socket,
-                &RuntimeManagerMessage::Initialize(policy.to_string()),
+                &RuntimeManagerMessage::Initialize(policy.to_string(), challenge, challenge_id),
             )
             .map_err(VeracruzServerError::SocketError)?;
 
             info!("Initialize message successfully sent.  Awaiting response...");
 
             let received: RuntimeManagerMessage = receive_message(&mut runtime_manager_socket).map_err(|e| {
-                error!("Failed to receive response to runtime manager enclave initialize message.  Error received: {:?].", e);
+                error!("Failed to receive response to runtime manager enclave initialize message.  Error received: {:?}.", e);
 
                 VeracruzServerError::SocketError(e)
             })?;
 
             match received {
+                RuntimeManagerMessage::AttestationData(attest) => {
+                    info!(
+                        "Response to attestation message successfully received ({} bytes).",
+                        attest.len()
+                    );
+                }
                 RuntimeManagerMessage::Status(VMStatus::Success) => {
                     info!("Runtime manager enclave successfully initialized...");
+                    ()
                 }
                 RuntimeManagerMessage::Status(otherwise) => {
                     error!(
@@ -318,38 +329,7 @@ pub mod veracruz_server_linux {
                 }
             }
 
-            send_message(&mut runtime_manager_socket, &RuntimeManagerMessage::Attestation(challenge, challend_id)).map_err(|e| {
-                error!("Failed to send attestation message to runtime manager enclave.  Error returned: {:?}.", e);
-
-                VeracruzServerError::SocketError(e)
-            })?;
-
-            info!("Attestation message successfully sent to runtime manager enclave.");
-
-            let received: RuntimeManagerMessage = receive_message(&mut runtime_manager_socket).map_err(|e| {
-                error!("Failed to receive response to runtime manager enclave attestation message.  Error received: {:?}.", e);
-
-                VeracruzServerError::SocketError(e)
-            })?;
-
-            info!("Response to attestation message received from runtime manager enclave.");
-
-            match received {
-                RuntimeManagerMessage::AttestationData(attest) => {
-                    info!(
-                        "Response to attestation message successfully received ({} bytes).",
-                        attest.len()
-                    );
-                }
-                otherwise => {
-                    error!(
-                        "Unexpected response received from runtime manager enclave: {:?}.",
-                        otherwise
-                    );
-
-                    return Err(VeracruzServerError::InvalidRuntimeManagerMessage(otherwise));
-                }
-            }
+            Ok(Self{ runtime_manager_socket })
         }
 
         #[inline]
