@@ -170,7 +170,6 @@ clean:
 	# clean code
 	cd execution-engine && cargo clean
 	cd io-utils && cargo clean
-	cd linux-root-enclave && cargo clean
 	cd platform-services && cargo clean
 	cd policy-utils && cargo clean
 	cd proxy-attestation-server && cargo clean
@@ -197,7 +196,6 @@ quick-clean:
 	# clean code
 	cd execution-engine && cargo clean
 	cd io-utils && cargo clean
-	cd linux-root-enclave && cargo clean
 	cd platform-services && cargo clean
 	cd policy-utils && cargo clean
 	cd proxy-attestation-server && cargo clean
@@ -210,7 +208,7 @@ quick-clean:
 	cd veracruz-client && cargo clean
 	$(MAKE) quick-clean -C veracruz-mcu-client
 	cd veracruz-server && cargo clean
-	cd veracruz-server-test && cargo clean	
+	cd veracruz-server-test && cargo clean
 	cd veracruz-test && cargo clean
 	cd veracruz-utils && cargo clean
 
@@ -218,14 +216,13 @@ quick-clean:
 clean-cargo-lock:
 	$(MAKE) -C sdk clean-cargo-lock
 	$(MAKE) -C test-collateral clean-cargo-lock
-	rm -f $(addsuffix /Cargo.lock,execution-engine io-utils linux-root-enclave platform-services policy-utils proxy-attestation-server psa-attestation runtime-manager session-manager transport-protocol veracruz-client veracruz-server veracruz-server-test veracruz-test veracruz-utils)
+	rm -f $(addsuffix /Cargo.lock,execution-engine io-utils platform-services policy-utils proxy-attestation-server psa-attestation runtime-manager session-manager transport-protocol veracruz-client veracruz-server veracruz-server-test veracruz-test veracruz-utils)
 
 # update dependencies, note does NOT change Cargo.toml, useful if
 # patched/github dependencies have changed without version bump
 update:
 	cd execution-engine && cargo update
 	cd io-utils && cargo update
-	cd linux-root-enclave && cargo update
 	cd platform-services && cargo update
 	cd policy-utils && cargo update
 	cd proxy-attestation-server && cargo update
@@ -244,7 +241,6 @@ update:
 fmt: install-rustfmt
 	cd execution-engine && cargo fmt
 	cd io-utils && cargo fmt
-	cd linux-root-enclave && cargo fmt
 	cd platform-services && cargo fmt
 	cd policy-utils && cargo fmt
 	cd proxy-attestation-server && cargo fmt
@@ -264,7 +260,6 @@ fmt: install-rustfmt
 fmt-check: install-rustfmt
 	cd execution-engine && cargo fmt -- --check
 	cd io-utils && cargo fmt -- --check
-	cd linux-root-enclave && cargo fmt -- --check
 	cd platform-services && cargo fmt -- --check
 	cd policy-utils && cargo fmt -- --check
 	cd proxy-attestation-server && cargo fmt -- --check
