@@ -29,4 +29,5 @@
 	branch = video-object-detection
 [submodule "benchmark/wasmtime-0.27"]
 	path = benchmark/wasmtime-0.27
-	url = https://github.com/bytecodealliance/wasmtime
+	url = https://github.com/gbryant-arm/wasmtime-0.27
+	branch = benchmarking
