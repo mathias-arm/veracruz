@@ -1,33 +1,5 @@
 # Benchmarking
 
-## Docker
-
-### Build image
-```
-DOCKER_BUILDKIT=1 docker build --build-arg USER=root --build-arg UID=0 -t veracruz_benchmarking .
-```
-
-### Run container
-```
-#docker run --rm --privileged -d -v $(abspath ..):/work \
-docker run --rm --privileged -d \
-	-v `realpath ..`/wasmtime-upstream:/work/wasmtime-upstream \
-	-v `realpath ..`/wasmtime-veracruz:/work/wasmtime-veracruz \
-	-v /home/guibry01/Documents/Projects/Veracruz/veracruz:/work/veracruz \
-	-v `realpath ..`/polybench-c-4.2.1-beta:/work/polybench-c-4.2.1-beta \
-	-v `realpath ..`/veracruz-examples:/work/veracruz-examples \
-	-v /usr/bin:/host/bin \
-	-v /var/run/docker.sock:/var/run/docker.sock \
-	--name veracruz_benchmarking_test veracruz_benchmarking sleep inf
-```
-
-### Execute
-```
-docker exec -it veracruz_benchmarking_test /bin/bash
-```
-
-
-
 ## Bare metal
 
 ### Prerequisites
@@ -59,3 +31,31 @@ docker exec -it veracruz_benchmarking_test /bin/bash
   ```
 * Build the [video object detection example](https://github.com/gbryant-arm/veracruz-examples/tree/main/video-decoding)
 * Optional: Build the [deep learning server](https://github.com/veracruz-project/veracruz-examples/tree/main/deep-learning-server) following the README
+
+
+
+## Docker (WIP)
+
+### Build image
+```
+DOCKER_BUILDKIT=1 docker build --build-arg USER=root --build-arg UID=0 -t veracruz_benchmarking .
+```
+
+### Run container
+```
+#docker run --rm --privileged -d -v $(abspath ..):/work \
+docker run --rm --privileged -d \
+	-v `realpath ..`/wasmtime-upstream:/work/wasmtime-upstream \
+	-v `realpath ..`/wasmtime-veracruz:/work/wasmtime-veracruz \
+	-v /home/guibry01/Documents/Projects/Veracruz/veracruz:/work/veracruz \
+	-v `realpath ..`/polybench-c-4.2.1-beta:/work/polybench-c-4.2.1-beta \
+	-v `realpath ..`/veracruz-examples:/work/veracruz-examples \
+	-v /usr/bin:/host/bin \
+	-v /var/run/docker.sock:/var/run/docker.sock \
+	--name veracruz_benchmarking_test veracruz_benchmarking sleep inf
+```
+
+### Execute
+```
+docker exec -it veracruz_benchmarking_test /bin/bash
+```
