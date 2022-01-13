@@ -31,19 +31,20 @@ docker exec -it veracruz_benchmarking_test /bin/bash
 ## Bare metal
 
 ### Prerequisites
-* Install WASI SDK and set `WASI_SDK_ROOT` environment variable
+* Install [`wasi sdk 14`](https://github.com/WebAssembly/wasi-sdk) and set `WASI_SDK_ROOT` to point to its installation directory
 
 ### polybench-c
 * Open the polybench directory:
   ```
   cd polybench-c-4.2.1-beta
   ```
-* Generate Makefiles for each example:
+* Compile examples to native and WASM:
+  ```
+  make
+  ```
+* Alternatively, you can generate Makefiles for each example and compile them separately:
   ```
   perl utilities/makefile-gen.pl . -cfg
-  ```
-* Compile examples (WASM and native):
-  ```
   perl utilities/make-all.pl
   ```
 * Run the actual benchmark: 5 runs per example, the longest and shortest durations are ditched; warning if the variance is bigger than the threshold; save results to CSV
@@ -56,5 +57,5 @@ docker exec -it veracruz_benchmarking_test /bin/bash
   ```
   cd veracruz-examples
   ```
-* Build the [deep learning server](https://github.com/veracruz-project/veracruz-examples/tree/main/deep-learning-server) following the README
-* Build the video object detection example 
+* Build the [video object detection example](https://github.com/gbryant-arm/veracruz-examples/tree/main/video-decoding)
+* Optional: Build the [deep learning server](https://github.com/veracruz-project/veracruz-examples/tree/main/deep-learning-server) following the README
