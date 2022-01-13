@@ -25,7 +25,8 @@
 //! See the file `LICENSING.markdown` in the Veracruz root directory for licensing
 //! and copyright information.
 
-use std::{fs, io};
+use anyhow;
+use std::{fs, io, time};
 
 #[rustfmt::skip]
 // lookup tables for log and exp of polynomials in GF(256),
@@ -218,6 +219,15 @@ fn main() -> anyhow::Result<()> {
     let secret = shares_reconstruct(&shares);
 
     // write our output
-    fs::write("/output/shamir.dat", &secret)?;
+    fs::write("/output/shamir.dat", format!("{}\ntime: {:?}\ntime: {:?}\ntime: {:?}\ntime: {:?}\ntime: {:?}\n",
+        String::from_utf8_lossy(&secret),
+        // HACK testing that time works
+        time::Instant::now(),
+        time::Instant::now(),
+        time::Instant::now(),
+        time::Instant::now(),
+        time::Instant::now(),
+    ))?;
+
     Ok(())
 }
