@@ -1,7 +1,7 @@
 #!/bin/bash
 
 csv_output="output.csv"
-fee_path="$HOME/Documents/Projects/Veracruz/veracruz/sdk/freestanding-execution-engine/target/debug/freestanding-execution-engine"
+fee_path="/work/veracruz/workspace/host/target/release/freestanding-execution-engine"
 
 extract_time() {
 	echo "$1" | sed -nr "s/^.*Normalized time: ([0-9.]+)$/\1/p"

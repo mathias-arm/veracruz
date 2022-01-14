@@ -6,14 +6,14 @@ WASM_CXX=$(WASI_SDK_ROOT)/bin/clang++ --sysroot=$(WASI_SDK_SYSROOT) $(CLANG_FLAG
 WASM_CXX=$(WASM_CC)
 #CXX=$(CC)
 
-CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-writable-strings -fPIC -DEXTRALARGE_DATASET -static
+CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-writable-strings -fPIC -DEXTRALARGE_DATASET -static -D_WASI_EMULATED_PROCESS_CLOCKS
 CFLAGS_WASM=$(CFLAGS) -msimd128 -D_WASI_EMULATED_PROCESS_CLOCKS
 OPTS=-Ofast
 #OPTS=-O0 -g
 
 CFLAGS+=$(OPTS)
 
-LDFLAGS= -lm
+LDFLAGS= -lm -lwasi-emulated-process-clocks
 
 all: correlation covariance gemm gemver gesummv symm syr2k syrk trmm 2mm 3mm atax bicg doitgen mvt cholesky durbin gramschmidt ludcmp lu trisolv deriche floyd-warshall nussinov adi fdtd-2d heat-3d jacobi-1d jacobi-2d seidel-2d
 
