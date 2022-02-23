@@ -50,7 +50,7 @@ fn main() {
     let make_status = Command::new("make")
         .env("CC", &cc)
         .current_dir(mbed_crypto_dir.clone())
-        .args(&["-j8", "all", outdir_arg.as_str()])
+        .args(&["-j8", "all", "CFLAGS=-D__USE_FORTIFY_LEVEL=0", outdir_arg.as_str()])
         .status()
         .unwrap();
     if !make_status.success() {
