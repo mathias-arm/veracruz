@@ -37,7 +37,7 @@ all: build test-collateral
 
 build:
 	$(CC) \
-		cargo build $(PROFILE_FLAG) \
+		cargo build $(PROFILE_FLAG) $(V_FLAG) \
 		-p proxy-attestation-server \
 		-p veracruz-client -p veracruz-server \
 		--features proxy-attestation-server/linux \
