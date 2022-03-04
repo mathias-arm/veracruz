@@ -97,6 +97,7 @@ impl ProtocolState {
 
     /// Returns the global policy associated with the protocol state.
     #[inline]
+    #[allow(dead_code)]
     pub(crate) fn get_policy(&self) -> &Policy {
         &self.global_policy
     }
@@ -218,7 +219,7 @@ impl ProtocolState {
             transport_protocol::ResponseStatus::SUCCESS as i32,
             Some(error_code.to_le_bytes().to_vec()),
         )
-        .unwrap_or_else(|err| panic!(err))
+        .unwrap_or_else(|err| panic!("{}", err))
     }
 }
 
@@ -245,7 +246,7 @@ pub fn error_message(message: String, error_code: u32) {
 /// Base function for printing messages outside of the enclave.  Note that this
 /// should only print something to *stdoout* on the host's machine if the debug
 /// configuration flag is set in the Veracruz global policy.
-fn print_message(message: String, code: u32) {
+fn print_message(#[allow(unused)] message: String, #[allow(unused)] code: u32) {
     #[cfg(feature = "linux")]
     if code == 0 {
         eprintln!("Enclave debug message \"{}\"", message);
