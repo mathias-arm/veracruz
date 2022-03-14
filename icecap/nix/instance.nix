@@ -16,14 +16,14 @@ let
   inherit (pkgs.linux.icecap) linuxKernel nixosLite;
   inherit (configured) icecapFirmware icecapPlat selectIceCapPlatOr mkRealm;
 
-  runtimeManagerElf = ../../icecap-runtime/build/bin/runtime_manager_enclave.elf;
+  runtimeManagerElf = ../build/bin/runtime_manager_enclave.elf;
 
   testElf = {
     veracruz-server-test = ../build/bin/veracruz-server-test;
     veracruz-test = ../build/bin/veracruz-test;
   };
 
-  proxyAttestationServerTestDatabase = ../proxy-attestation-server.db;
+  proxyAttestationServerTestDatabase = ../../test-collateral/proxy-attestation-server.db;
 
   tokenSshKeyPriv = ./host/token-ssh-key.priv;
 
@@ -83,7 +83,7 @@ in lib.fix (self: with self; {
   };
 
   spec = mkRealm {
-    script = ../../../icecap/src/python/realm.py;
+    script = ../src/python/realm.py;
     config = {
       realm_id = 0;
       num_cores = 1;
@@ -121,7 +121,7 @@ in lib.fix (self: with self; {
   '';
 
   testCollateralRaw = lib.cleanSourceWith {
-    src = lib.cleanSource ../test-collateral;
+    src = lib.cleanSource ../../test-collateral;
     filter = name: type:
       type == "directory" || (
         lib.any (pattern: builtins.match pattern name != null) [
