@@ -11,21 +11,20 @@
 
 extern crate alloc;
 
-use core::mem::size_of;
 use core::convert::TryFrom;
+use core::mem::size_of;
 
-use icecap_start_generic::declare_generic_main;
 use icecap_core::config::*;
 use icecap_core::logger::{DisplayMode, Level, Logger};
 use icecap_core::prelude::*;
 use icecap_core::ring_buffer::*;
+use icecap_start_generic::declare_generic_main;
 
-use veracruz_utils::platform::icecap::message::{Error, Request, Response, Header};
 use crate::managers::{session_manager, RuntimeManagerError};
+use veracruz_utils::platform::icecap::message::{Error, Header, Request, Response};
 
 use bincode;
 use serde::{Deserialize, Serialize};
-
 
 declare_generic_main!(main);
 
@@ -48,9 +47,8 @@ fn main(config: Config) -> Fallible<()> {
     debug_println!("icecap-realmos: initializing...");
 
     // enable ring buffer to serial-server
-    let virtio_console_client = RingBuffer::unmanaged_from_config(
-        &config.virtio_console_server_ring_buffer,
-    );
+    let virtio_console_client =
+        RingBuffer::unmanaged_from_config(&config.virtio_console_server_ring_buffer);
     virtio_console_client.enable_notify_read();
     virtio_console_client.enable_notify_write();
     debug_println!("icecap-realmos: enabled ring buffer");
@@ -59,56 +57,57 @@ fn main(config: Config) -> Fallible<()> {
     RuntimeManager::new(
         virtio_console_client,
         config.event_nfn,
-        config.badges.virtio_console_server_ring_buffer
-    ).run()
+        config.badges.virtio_console_server_ring_buffer,
+    )
+    .run()
 }
 
-    // fn handle(&mut self, req: Request) -> Fallible<Response> {
-    //     Ok(match req {
-    //         Request::Attestation {
-    //             device_id,
-    //             challenge,
-    //         } => match session_manager::init_session_manager()
-    //             .and(self.handle_attestation(device_id, &challenge))
-    //         {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok((token, csr)) => Response::Attestation { token, csr },
-    //         },
-    //         Request::Initialize {
-    //             policy_json,
-    //             root_cert,
-    //             compute_cert,
-    //         } => match session_manager::load_policy(&policy_json).and(
-    //             session_manager::load_cert_chain(&vec![compute_cert, root_cert]),
-    //         ) {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok(()) => Response::Initialize,
-    //         },
-    //         Request::NewTlsSession => match session_manager::new_session() {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok(sess) => Response::NewTlsSession(sess),
-    //         },
-    //         Request::CloseTlsSession(sess) => match session_manager::close_session(sess) {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok(()) => Response::CloseTlsSession,
-    //         },
-    //         Request::SendTlsData(sess, data) => match session_manager::send_data(sess, &data) {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok(()) => Response::SendTlsData,
-    //         },
-    //         Request::GetTlsDataNeeded(sess) => match session_manager::get_data_needed(sess) {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok(needed) => Response::GetTlsDataNeeded(needed),
-    //         },
-    //         Request::GetTlsData(sess) => match session_manager::get_data(sess) {
-    //             Err(_) => Response::Error(Error::Unspecified),
-    //             Ok((active, data)) => {
-    //                 self.active = active;
-    //                 Response::GetTlsData(active, data)
-    //             }
-    //         },
-    //     })
-    // }
+// fn handle(&mut self, req: Request) -> Fallible<Response> {
+//     Ok(match req {
+//         Request::Attestation {
+//             device_id,
+//             challenge,
+//         } => match session_manager::init_session_manager()
+//             .and(self.handle_attestation(device_id, &challenge))
+//         {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok((token, csr)) => Response::Attestation { token, csr },
+//         },
+//         Request::Initialize {
+//             policy_json,
+//             root_cert,
+//             compute_cert,
+//         } => match session_manager::load_policy(&policy_json).and(
+//             session_manager::load_cert_chain(&vec![compute_cert, root_cert]),
+//         ) {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok(()) => Response::Initialize,
+//         },
+//         Request::NewTlsSession => match session_manager::new_session() {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok(sess) => Response::NewTlsSession(sess),
+//         },
+//         Request::CloseTlsSession(sess) => match session_manager::close_session(sess) {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok(()) => Response::CloseTlsSession,
+//         },
+//         Request::SendTlsData(sess, data) => match session_manager::send_data(sess, &data) {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok(()) => Response::SendTlsData,
+//         },
+//         Request::GetTlsDataNeeded(sess) => match session_manager::get_data_needed(sess) {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok(needed) => Response::GetTlsDataNeeded(needed),
+//         },
+//         Request::GetTlsData(sess) => match session_manager::get_data(sess) {
+//             Err(_) => Response::Error(Error::Unspecified),
+//             Ok((active, data)) => {
+//                 self.active = active;
+//                 Response::GetTlsData(active, data)
+//             }
+//         },
+//     })
+// }
 
 struct RuntimeManager {
     channel: RingBuffer,
@@ -150,7 +149,11 @@ impl RuntimeManager {
     fn process(&mut self) -> Fallible<()> {
         // recv request if we have a full request in our ring buffer
         if self.channel.poll_read() < size_of::<Header>() {
-            debug_println!("vcr: have {} need {}", self.channel.poll_read(), size_of::<Header>());
+            debug_println!(
+                "vcr: have {} need {}",
+                self.channel.poll_read(),
+                size_of::<Header>()
+            );
             return Ok(());
         }
         let mut raw_header = [0; size_of::<Header>()];
@@ -161,7 +164,11 @@ impl RuntimeManager {
             .map_err(|e| format_err!("Failed to deserialize request: {}", e))?;
 
         if self.channel.poll_read() < size_of::<Header>() + size {
-            debug_println!("vcr: have {} need {}", self.channel.poll_read(), size_of::<Header>() + size);
+            debug_println!(
+                "vcr: have {} need {}",
+                self.channel.poll_read(),
+                size_of::<Header>() + size
+            );
             return Ok(());
         }
         let mut raw_request = vec![0; usize::try_from(header).unwrap()];
@@ -224,7 +231,10 @@ impl RuntimeManager {
                 Ok(()) => Response::CloseTlsSession,
             },
             Request::SendTlsData(sess, data) => match session_manager::send_data(sess, &data) {
-                Err(e) => { debug_println!("oh no {:?}", e); Response::Error(Error::Unspecified) },
+                Err(e) => {
+                    debug_println!("oh no {:?}", e);
+                    Response::Error(Error::Unspecified)
+                }
                 Ok(()) => Response::SendTlsData,
             },
             Request::GetTlsDataNeeded(sess) => match session_manager::get_data_needed(sess) {
