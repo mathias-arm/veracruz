@@ -23,14 +23,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Build IceCap runtime-manager
-        id: icecap-build
-        run: |
-            make -C /work/veracruz/workspaces/icecap-runtime build PROFILE=dev
-      - name: Running IceCap test-client
-        id: icecap-test-client
-        run: |
-            make -C /work/veracruz/workspaces/icecap-host test-client PROFILE=dev
       - name: Running IceCap test-server
         id: icecap-test-server
         run: |
