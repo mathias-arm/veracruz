@@ -59,4 +59,5 @@ jobs:
       - name: Running IceCap test script
         id: icecap-build
         run: |
+            make -C /work/veracruz/workspaces/icecap-runtime build PROFILE=dev
             make -C /work/veracruz/workspaces/icecap-host test-client veracruz-test PROFILE=dev
