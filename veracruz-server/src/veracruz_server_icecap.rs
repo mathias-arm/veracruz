@@ -14,6 +14,10 @@ use bincode;
 use err_derive::Error;
 use io_utils::http::{post_buffer, send_proxy_attestation_server_start};
 use policy_utils::policy::Policy;
+use signal_hook::{
+    consts::SIGINT,
+    iterator::{Handle, Signals},
+};
 use std::{
     convert::TryFrom,
     env, error, fs,
@@ -26,10 +30,6 @@ use std::{
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
     time::Duration,
-};
-use signal_hook::{
-    consts::SIGINT,
-    iterator::{Handle, Signals},
 };
 use tempfile;
 use tempfile::TempDir;
@@ -104,11 +104,15 @@ struct IceCapRealm {
     // NOTE the order of these fields matter due to drop ordering
     child: Arc<Mutex<Child>>,
     channel: UnixStream,
-    #[allow(dead_code)] stdout_handler: JoinHandle<()>,
-    #[allow(dead_code)] stderr_handler: JoinHandle<()>,
+    #[allow(dead_code)]
+    stdout_handler: JoinHandle<()>,
+    #[allow(dead_code)]
+    stderr_handler: JoinHandle<()>,
     signal_handle: Handle,
-    #[allow(dead_code)] signal_handler: JoinHandle<()>,
-    #[allow(dead_code)] tempdir: TempDir,
+    #[allow(dead_code)]
+    signal_handler: JoinHandle<()>,
+    #[allow(dead_code)]
+    tempdir: TempDir,
 }
 
 impl IceCapRealm {
@@ -159,24 +163,20 @@ impl IceCapRealm {
                 .args(&qemu_bin[1..])
                 .args(&qemu_flags)
                 .args(
-                    qemu_console_flags.iter()
-                        .map(|s| s.replace(
-                            "{console0_path}",
-                            channel_path.to_str().unwrap()
-                        ))
+                    qemu_console_flags
+                        .iter()
+                        .map(|s| s.replace("{console0_path}", channel_path.to_str().unwrap())),
                 )
                 .args(
-                    qemu_image_flags.iter()
-                        .map(|s| s.replace(
-                            "{image_path}",
-                            image_path.to_str().unwrap()
-                        ))
+                    qemu_image_flags
+                        .iter()
+                        .map(|s| s.replace("{image_path}", image_path.to_str().unwrap())),
                 )
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
-                .map_err(IceCapError::QemuSpawnError)?
+                .map_err(IceCapError::QemuSpawnError)?,
         ));
 
         // forward stderr/stdin via threads, this is necessary to avoid stdio

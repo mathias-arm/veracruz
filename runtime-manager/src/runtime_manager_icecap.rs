@@ -143,7 +143,8 @@ impl RuntimeManager {
                 device_id,
                 challenge,
             } => match session_manager::init_session_manager()
-                .and(self.handle_attestation(device_id, &challenge)) {
+                .and(self.handle_attestation(device_id, &challenge))
+            {
                 Err(_) => Response::Error(Error::Unspecified),
                 Ok((token, csr)) => Response::Attestation { token, csr },
             },
