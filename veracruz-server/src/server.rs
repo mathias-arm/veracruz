@@ -132,8 +132,8 @@ pub fn server(policy_json: &str) -> Result<Server, VeracruzServerError> {
         App::new()
             // pass in the shutdown channel and enclave handler VERACRUZ_SERVER to the server
             .wrap(middleware::Logger::default())
-            .data(shutdown_channel_tx.clone())
-            .data(VERACRUZ_SERVER.clone())
+            .app_data(shutdown_channel_tx.clone())
+            .app_data(VERACRUZ_SERVER.clone())
             .service(veracruz_server_request)
             .service(runtime_manager_request)
     })
@@ -141,13 +141,13 @@ pub fn server(policy_json: &str) -> Result<Server, VeracruzServerError> {
     .run();
 
     // clone the Server handle and pass the the thread for shuting down the server
-    let server_clone = server.clone();
+    let handle = server.handle();
     thread::spawn(move || {
         // wait for shutdown signal
         match shutdown_channel_rx.recv() {
             // stop server gracefully
             Ok(_) => {
-                executor::block_on(server_clone.stop(true));
+                executor::block_on(handle.stop(true));
             }
             // this CAN fail, in the case that the main thread has died,
             // most likely from a user's ctrl-C, in either case we want to
