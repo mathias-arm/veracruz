@@ -58,7 +58,7 @@ impl VsockSocket {
     {
         let sockaddr = SockAddr::new_vsock(cid.into(), port.into());
         // Just a placeholder!
-        let mut err: nix::Error = nix::Error::UnsupportedOperation;
+        let mut err: nix::Error = nix::errno::Errno::EOPNOTSUPP;
 
         for i in 0..MAX_CONNECTION_ATTEMPTS {
             let vsocket = VsockSocket::new(socket(

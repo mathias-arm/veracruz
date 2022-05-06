@@ -15,7 +15,6 @@
 use super::error::SocketError;
 use byteorder::{ByteOrder, LittleEndian};
 use nix::{
-    errno::Errno::EINTR,
     sys::socket::{recv, send, MsgFlags},
 };
 use std::{os::unix::io::RawFd, vec::Vec};
@@ -48,7 +47,6 @@ pub fn send_buffer(fd: RawFd, buffer: &Vec<u8>) -> Result<(), SocketError> {
         while sent_bytes < len {
             let size = match send(fd, &buffer[sent_bytes..len], MsgFlags::empty()) {
                 Ok(size) => size,
-                Err(nix::Error::Sys(_)) => 0,
                 Err(err) => {
                     return Err(SocketError::NixError(err));
                 }
@@ -70,7 +68,7 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>, SocketError> {
         while received_bytes < len {
             received_bytes += match recv(fd, &mut buf[received_bytes..len], MsgFlags::empty()) {
                 Ok(size) => size,
-                Err(nix::Error::Sys(EINTR)) => 0,
+                Err(nix::errno::Errno::EINTR) => 0,
                 Err(err) => {
                     println!("I have experienced an error:{:?}", err);
                     return Err(SocketError::NixError(err));
@@ -87,7 +85,7 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>, SocketError> {
             received_bytes += match recv(fd, &mut buffer[received_bytes..length], MsgFlags::empty())
             {
                 Ok(size) => size,
-                Err(nix::Error::Sys(EINTR)) => 0,
+                Err(nix::errno::Errno::EINTR) => 0,
                 Err(err) => {
                     return Err(SocketError::NixError(err));
                 }
