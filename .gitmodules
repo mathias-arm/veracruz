@@ -60,3 +60,18 @@
 [submodule "third-party/rust-mbedtls"]
 	path = third-party/rust-mbedtls
 	url = https://github.com/veracruz-project/rust-mbedtls.git
+[submodule "icecap/third-party/getrandom"]
+	path = icecap/third-party/getrandom
+	url = https://github.com/veracruz-project/getrandom.git
+[submodule "icecap/third-party/errno"]
+	path = icecap/third-party/errno
+	url = https://github.com/veracruz-project/rust-errno.git
+[submodule "icecap/third-party/atty"]
+	path = icecap/third-party/atty
+	url = https://github.com/veracruz-project/atty.git
+[submodule "icecap/third-party/directories-next"]
+	path = icecap/third-party/directories-next
+	url = https://github.com/veracruz-project/dirs.git
+[submodule "icecap/third-party/region"]
+	path = icecap/third-party/region
+	url = https://github.com/veracruz-project/region-rs.git
