@@ -14,9 +14,10 @@
 WORKSPACE_DIR = $(abspath ..)
 include $(WORKSPACE_DIR)/common.mk
 
+COMPILERS = CC_x86_64_unknown_linux_gnu=gcc CC_aarch64_unknown_linux_gnu=gcc
 
 all: crates/sdk/wasm-checker/bin/wasm-checker
-	cargo build $(PROFILE_FLAG) $(V_FLAG)
+	$(COMPILERS) cargo build $(PROFILE_FLAG) $(V_FLAG)
 
 install:
 	# create full names

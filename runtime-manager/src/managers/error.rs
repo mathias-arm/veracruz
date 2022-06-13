@@ -10,9 +10,9 @@
 //! information on licensing and copyright.
 
 use err_derive::Error;
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "cca", feature = "nitro"))]
 use io_utils::error::SocketError;
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "cca", feature = "nitro"))]
 use nix;
 
 #[derive(Debug, Error)]
@@ -36,7 +36,7 @@ pub enum RuntimeManagerError {
     #[cfg(feature = "nitro")]
     #[error(display = "RuntimeManager: Socket Error: {:?}", _0)]
     SocketError(nix::Error),
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature="cca"))]
     #[error(display = "RuntimeManager: Veracruz Socket error: {:?}", _0)]
     VeracruzSocketError(SocketError),
     #[cfg(feature = "nitro")]
@@ -53,4 +53,7 @@ pub enum RuntimeManagerError {
     LockSessionManager,
     #[error(display = "RuntimeManager: Failed to obtain lock on session table.")]
     LockSessionTable,
+    #[cfg(feature = "cca")]
+    #[error(display = "RuntimeManager: Attestation Error: {:?}", _0)]
+    AttestationError(nix::Error),
 }

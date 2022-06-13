@@ -13,17 +13,21 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
+#[macro_use]
+extern crate log;
+
 /// IO-related error type.
 pub mod error;
 #[cfg(any(feature = "nitro", feature = "linux"))]
 /// FD-related material.
 pub mod fd;
 /// HTTP-related material.
+#[cfg(feature = "host")]
 pub mod http;
 #[cfg(feature = "nitro")]
 pub mod nitro;
 /// Buffer send- and receive-related functionality for raw file descriptors.
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "nitro", feature = "cca"))]
 pub mod raw_fd;
 #[cfg(feature = "linux")]
 /// TCP-socket related material.
