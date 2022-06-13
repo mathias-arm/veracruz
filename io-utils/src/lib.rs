@@ -19,6 +19,7 @@ pub mod error;
 /// FD-related material.
 pub mod fd;
 /// HTTP-related material.
+#[cfg(feature = "host")]
 pub mod http;
 #[cfg(feature = "nitro")]
 pub mod nitro;

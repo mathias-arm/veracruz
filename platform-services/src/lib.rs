@@ -25,11 +25,11 @@ use crate::result::Result;
 
 pub mod result;
 
-#[cfg(feature = "icecap")]
+#[cfg(all(feature = "icecap", not(feature = "std")))]
 #[path = "icecap_platform_services.rs"]
 mod imp;
 
-#[cfg(feature = "nitro")]
+#[cfg(all(feature = "nitro", not(feature = "std")))]
 #[path = "nitro_platform_services.rs"]
 mod imp;
 
