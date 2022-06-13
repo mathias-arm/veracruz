@@ -10,6 +10,17 @@ name = "veracruz_server"
 path = "src/lib.rs"
 
 [features]
+cca = [
+  "data-encoding",
+  "io-utils/cca",
+  "io-utils/host",
+  "io-utils/linux",
+  "nix",
+  "policy-utils/std",
+  "signal-hook",
+  "tempfile",
+  "veracruz-utils/linux",
+]
 # a feature to enable CLI-only dependencies
 # https://stackoverflow.com/questions/35711044/how-can-i-specify-binary-only-dependencies
 cli = [

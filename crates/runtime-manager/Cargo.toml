@@ -8,6 +8,7 @@ resolver = "2"
 
 [features]
 default = []
+cca = []
 linux = [
   "bincode",
   "execution-engine/std",

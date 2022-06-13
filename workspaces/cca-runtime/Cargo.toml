@@ -1,0 +1,36 @@
+# workspaces/cca-runtime/Cargo.toml:
+# Workspace for trusted Linux CCA services
+#
+# AUTHORS
+#
+# The Veracruz Development Team.
+#
+# COPYRIGHT
+#
+# See the `LICENSE_MIT.markdown` file in the Veracruz root director for licensing
+# and copyright information.
+
+cargo-features = ["resolver"]
+
+[workspace]
+exclude = [
+  "crates/icecap/sysroot/libc",
+  "crates/third-party/rust-mbedtls",
+  "crates/third-party/rust-psa-crypto",
+  "crates/third-party/wasmi",
+]
+members = [
+  # "crates/runtime-manager",
+  "src/init",
+]
+resolver = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+
+[patch.crates-io]
+ring = { path = "crates/third-party/ring" }
+rustls = { path = "crates/third-party/rustls/rustls" }
+webpki = { path = "crates/third-party/webpki" }

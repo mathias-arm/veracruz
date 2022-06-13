@@ -34,7 +34,7 @@ pub enum RuntimeManagerError {
     #[cfg(feature = "nitro")]
     #[error(display = "RuntimeManager: Socket Error: {:?}", _0)]
     SocketError(nix::Error),
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature="cca"))]
     #[error(display = "RuntimeManager: Veracruz Socket error: {:?}", _0)]
     VeracruzSocketError(SocketError),
     #[cfg(feature = "nitro")]
