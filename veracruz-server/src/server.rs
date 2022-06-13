@@ -10,6 +10,8 @@
 //! information on licensing and copyright.
 
 use crate::veracruz_server::*;
+#[cfg(feature = "cca")]
+use crate::veracruz_server_cca::veracruz_server_cca::VeracruzServerCCA as VeracruzServerEnclave;
 #[cfg(feature = "icecap")]
 use crate::veracruz_server_icecap::VeracruzServerIceCap as VeracruzServerEnclave;
 #[cfg(feature = "linux")]

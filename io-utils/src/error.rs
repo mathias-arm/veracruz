@@ -34,7 +34,7 @@ pub enum SocketError {
     #[error(display = "SocketError: an IO error occurred: {:?}.", _0)]
     IOError(IOError),
     /// An error was returned by the Unix libraries.
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature = "cca"))]
     #[error(display = "SocketError: a Unix error occurred: {:?}", _0)]
     NixError(#[error(source)] nix::Error),
 }

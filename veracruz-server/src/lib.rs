@@ -15,6 +15,11 @@ pub use self::veracruz_server::*;
 pub mod server;
 pub use self::server::*;
 
+#[cfg(feature = "cca")]
+pub mod veracruz_server_cca;
+#[cfg(feature = "cca")]
+pub use self::veracruz_server_cca::veracruz_server_cca::*;
+
 #[cfg(feature = "nitro")]
 pub mod veracruz_server_nitro;
 #[cfg(feature = "nitro")]

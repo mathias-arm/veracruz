@@ -19,7 +19,7 @@ use std::sync::PoisonError;
 
 use veracruz_utils::csr::CertError;
 
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "nitro", feature="cca"))]
 use io_utils::error::SocketError;
 #[cfg(feature = "nitro")]
 use veracruz_utils::platform::nitro::nitro::NitroRootEnclaveMessage;
@@ -62,7 +62,7 @@ pub enum RuntimeManagerError {
     #[cfg(feature = "nitro")]
     #[error(display = "RuntimeManager: Socket Error: {:?}", _0)]
     SocketError(nix::Error),
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature="cca"))]
     #[error(display = "RuntimeManager: Veracruz Socket error: {:?}", _0)]
     VeracruzSocketError(SocketError),
     #[cfg(any(feature = "linux", feature = "nitro", feature = "icecap"))]

@@ -9,6 +9,7 @@ version = "0.3.0"
 icecap = ["serde/derive", "base64/std"]
 linux = ["bincode", "byteorder", "base64/std"]
 nitro = ["serde_json/std", "base64/std", "nix", "byteorder"]
+cca = ["nix"]
 
 # NOTE: socket2 is pinned to "=0.4.2" to avoid libc ^0.2.114 constraint
 #       in socket2 0.4.3

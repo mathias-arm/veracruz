@@ -6,7 +6,7 @@ name = "runtime_manager_enclave"
 version = "0.3.0"
 
 [lib]
-crate-type = ["staticlib"]
+# crate-type = ["staticlib"]
 name = "runtime_manager_enclave"
 path = "src/lib.rs"
 
@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [features]
 default = []
+cca = []
 icecap = [
   "bincode",
   "execution-engine/icecap",

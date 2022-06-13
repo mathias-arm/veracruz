@@ -19,12 +19,12 @@ pub mod error;
 /// FD-related material.
 pub mod fd;
 /// HTTP-related material.
-#[cfg(any(feature = "nitro", feature = "linux", feature = "icecap",))]
+#[cfg(any(feature = "nitro", feature = "linux", feature = "icecap", feature = "cca"))]
 pub mod http;
 #[cfg(feature = "nitro")]
 pub mod nitro;
 /// Buffer send- and receive-related functionality for raw file descriptors.
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "nitro", feature = "cca"))]
 pub mod raw_fd;
 #[cfg(feature = "linux")]
 /// TCP-socket related material.

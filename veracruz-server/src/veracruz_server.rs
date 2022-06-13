@@ -11,6 +11,8 @@
 
 #[cfg(feature = "icecap")]
 use crate::veracruz_server_icecap::IceCapError;
+#[cfg(feature = "cca")]
+use crate::veracruz_server_cca::veracruz_server_cca::CCAError;
 use actix_web::{error, http::StatusCode, HttpResponse, HttpResponseBuilder};
 #[cfg(feature = "nitro")]
 use base64;
@@ -76,13 +78,13 @@ pub enum VeracruzServerError {
     /// A HTTP error was produced.
     #[error(display = "Http error: {}.", _0)]
     HttpError(HttpError),
-    #[cfg(any(feature = "linux", feature = "nitro"))]
+    #[cfg(any(feature = "cca", feature = "linux", feature = "nitro"))]
     #[error(display = "VeracruzServer: BincodeError: {:?}", _0)]
     BincodeError(bincode::ErrorKind),
-    #[cfg(any(feature = "nitro", feature = "linux"))]
+    #[cfg(any(feature = "cca", feature = "nitro", feature = "linux"))]
     #[error(display = "VeracruzServer: Status: {:?}", _0)]
     Status(veracruz_utils::runtime_manager_message::Status),
-    #[cfg(any(feature = "linux", feature = "nitro"))]
+    #[cfg(any(feature = "cca", feature = "linux", feature = "nitro"))]
     #[error(
         display = "VeracruzServer: Received Invalid Runtime Manager response: {:?}",
         _0
@@ -95,16 +97,16 @@ pub enum VeracruzServerError {
     )]
     #[cfg(feature = "nitro")]
     InvalidNitroRootEnclaveMessage(veracruz_utils::platform::nitro::nitro::NitroRootEnclaveMessage),
-    #[cfg(any(feature = "linux", feature = "nitro"))]
+    #[cfg(any(feature = "cca", feature = "linux", feature = "nitro"))]
     #[error(display = "VeracruzServer: Received Invalid Protocol Buffer Message")]
     InvalidProtoBufMessage,
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "cca", feature = "nitro"))]
     #[error(display = "VeracruzServer: Nix Error: {:?}", _0)]
     NixError(#[error(source)] nix::Error),
     #[cfg(feature = "nitro")]
     #[error(display = "VeracruzServer: Serde Error")]
     SerdeError,
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature = "cca"))]
     #[error(display = "VeracruzServer: Veracruz Socket Error:{:?}", _0)]
     VeracruzSocketError(#[error(source)] io_utils::error::SocketError),
     #[cfg(feature = "nitro")]
@@ -113,6 +115,9 @@ pub enum VeracruzServerError {
     #[cfg(feature = "icecap")]
     #[error(display = "VeracruzServer: IceCap error: {:?}", _0)]
     IceCapError(IceCapError),
+    #[cfg(feature = "cca")]
+    #[error(display = "VeracruzServer: CCA error: {:?}", _0)]
+    CCAError(CCAError),
     #[error(display = "VeracruzServer: Enclave function {} failed.", _0)]
     EnclaveCallError(&'static str),
     #[error(
