@@ -9,6 +9,7 @@ version = "0.3.0"
 icecap = ["serde/derive", "base64/std"]
 linux = ["bincode", "byteorder", "base64/std"]
 nitro = ["serde_json/std", "base64/std", "nix", "byteorder"]
+cca = ["nix"]
 
 [dependencies]
 anyhow = "1"
