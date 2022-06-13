@@ -14,6 +14,7 @@ required-features = ["cli"]
 cca = [
   "data-encoding",
   "io-utils/cca",
+  "io-utils/host",
   "io-utils/linux",
   "nix",
   "policy-utils/std",
@@ -30,6 +31,7 @@ cli = [
 ]
 debug = []
 icecap = [
+  "io-utils/host",
   "io-utils/icecap",
   "policy-utils/icecap",
   "psa-attestation",
@@ -41,6 +43,7 @@ icecap-lkvm = []
 icecap-qemu = []
 linux = [
   "data-encoding",
+  "io-utils/host",
   "io-utils/linux",
   "nix",
   "policy-utils/std",
@@ -48,6 +51,7 @@ linux = [
   "veracruz-utils/linux",
 ]
 nitro = [
+  "io-utils/host",
   "io-utils/nitro",
   "nitro-enclave",
   "nix",
