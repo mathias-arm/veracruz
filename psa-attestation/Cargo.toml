@@ -12,6 +12,7 @@ crate-type = ["rlib"]
 
 [features]
 # build.rs depends on features
+cca = []
 linux = []
 nitro = [
   "mbedtls-sys-auto/monitor_getrandom",
