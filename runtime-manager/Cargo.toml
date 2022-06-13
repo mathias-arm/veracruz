@@ -8,6 +8,7 @@ resolver = "2"
 
 [features]
 default = []
+cca = []
 icecap = [
   "bincode",
   "execution-engine/icecap",
