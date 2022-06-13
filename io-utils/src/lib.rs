@@ -19,7 +19,7 @@ pub mod error;
 /// FD-related material.
 pub mod fd;
 /// HTTP-related material.
-#[cfg(any(feature = "nitro", feature = "linux", feature = "icecap", feature = "cca"))]
+#[cfg(feature = "host")]
 pub mod http;
 #[cfg(feature = "nitro")]
 pub mod nitro;
