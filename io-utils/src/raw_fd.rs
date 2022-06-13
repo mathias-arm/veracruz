@@ -14,10 +14,7 @@
 
 use anyhow::{anyhow, Result};
 use byteorder::{ByteOrder, LittleEndian};
-use nix::{
-    errno::Errno::EINTR,
-    sys::socket::{recv, send, MsgFlags},
-};
+use nix::{errno::Errno::EINTR, unistd::{read, write}};
 use std::{os::unix::io::RawFd, vec::Vec};
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,16 +31,22 @@ pub fn send_buffer(fd: RawFd, buffer: &[u8]) -> Result<()> {
         LittleEndian::write_u64(&mut buf, buffer.len() as u64);
         let mut sent_bytes = 0;
         while sent_bytes < buf.len() {
-            sent_bytes += send(fd, &buf[sent_bytes..buf.len()], MsgFlags::empty())?;
+            sent_bytes += match write(fd, &buf[sent_bytes..buf.len()]) {
+                Ok(size) => size,
+                Err(nix::Error::Sys(EINTR)) => 0,
+                Err(err) => {
+                    return Err(anyhow!(err));
+                }
+            };
         }
     }
     // next, send the buffer
     {
         let mut sent_bytes = 0;
         while sent_bytes < len {
-            let size = match send(fd, &buffer[sent_bytes..len], MsgFlags::empty()) {
+            let size = match write(fd, &buffer[sent_bytes..len]) {
                 Ok(size) => size,
-                Err(nix::Error::Sys(_)) => 0,
+                Err(nix::Error::Sys(EINTR)) => 0,
                 Err(err) => {
                     return Err(anyhow!(err));
                 }
@@ -63,11 +66,10 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>> {
         let len = buf.len();
         let mut received_bytes = 0;
         while received_bytes < len {
-            received_bytes += match recv(fd, &mut buf[received_bytes..len], MsgFlags::empty()) {
+            received_bytes += match read(fd, &mut buf[received_bytes..len]) {
                 Ok(size) => size,
                 Err(nix::Error::Sys(EINTR)) => 0,
                 Err(err) => {
-                    println!("I have experienced an error:{:?}", err);
                     return Err(anyhow!(err));
                 }
             }
@@ -79,8 +81,7 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>> {
     {
         let mut received_bytes: usize = 0;
         while received_bytes < length {
-            received_bytes += match recv(fd, &mut buffer[received_bytes..length], MsgFlags::empty())
-            {
+            received_bytes += match read(fd, &mut buffer[received_bytes..length]) {
                 Ok(size) => size,
                 Err(nix::Error::Sys(EINTR)) => 0,
                 Err(err) => {

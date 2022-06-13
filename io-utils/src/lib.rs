@@ -23,7 +23,7 @@ pub mod http;
 #[cfg(feature = "nitro")]
 pub mod nitro;
 /// Buffer send- and receive-related functionality for raw file descriptors.
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "nitro", feature = "cca"))]
 pub mod raw_fd;
 #[cfg(feature = "linux")]
 /// TCP-socket related material.

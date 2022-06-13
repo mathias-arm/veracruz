@@ -19,7 +19,7 @@ use err_derive::Error;
 #[derive(Debug, Error)]
 pub enum SocketError {
     /// An error was returned by the Unix libraries.
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature = "cca"))]
     #[error(display = "SocketError: a Unix error occurred: {:?}", _0)]
     NixError(#[error(source)] nix::Error),
 }

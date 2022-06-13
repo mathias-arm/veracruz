@@ -81,7 +81,7 @@ pub enum RuntimeManagerResponse {
     /// parameters:
     /// Vec<u8> - The nitro attestation document from the enclave
     AttestationData(Vec<u8>),
-    #[cfg(any(feature = "icecap", feature = "linux"))]
+    #[cfg(any(feature = "icecap", feature = "linux", feature = "cca"))]
     /// The response to the `Attestation` request.  Parameters (in order) are:
     /// - A byte encoding of the PSA attestation token,
     /// - A byte encoding of the Certificate Signing Request.
