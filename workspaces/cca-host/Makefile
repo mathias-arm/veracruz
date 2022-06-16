@@ -26,29 +26,35 @@ MEASUREMENT_FILE = $(RUNTIME_ENCLAVE_BINARY_PATH)
 MEASUREMENT_PARAMETER = --css-file $(MEASUREMENT_FILE)
 include $(WORKSPACE_DIR)/shared.mk
 
-CC = CC_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc \
-	LD_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc
+ifeq ($(QEMU),1)
+	COMPILERS = CC_x86_64_unknown_linux_gnu=gcc CC_aarch64_unknown_linux_gnu=gcc
+	TARGET =
+else
+	COMPILERS = CC_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc \
+		LD_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc
+	TARGET = --target aarch64-unknown-linux-gnu
+endif
 
 TEST_PARAMETERS = VERACRUZ_POLICY_DIR=$(OUT_DIR) \
 	VERACRUZ_TRUST_DIR=$(OUT_DIR) \
 	VERACRUZ_PROGRAM_DIR=$(OUT_DIR) \
 	VERACRUZ_DATA_DIR=$(OUT_DIR) \
-	RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH)
+	VERACRUZ_CCA_KERNEL_PATH=$(WORKSPACE_DIR)/cca-runtime/Image.guest \
+	VERACRUZ_CCA_INITRD_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH)
 
 CLIPPY_OPTIONS = --no-deps -A clippy::type_complexity -A clippy::module_inception -D warnings
 
 all: build test-collateral
 
 build:
-	RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
-	$(CC) \
+	$(COMPILERS) \
 		cargo build $(PROFILE_FLAG) $(V_FLAG) \
-		--target aarch64-unknown-linux-gnu \
 		-p proxy-attestation-server \
 		-p veracruz-client -p veracruz-server \
 		--features proxy-attestation-server/cca \
 		--features veracruz-client/cca \
 		--features veracruz-server/cca \
+		--features veracruz-server/vsock \
 		--features cli
 
 install:
@@ -64,14 +70,14 @@ install:
 test-dependencies: test-collateral $(RUNTIME_ENCLAVE_BINARY_PATH)
 
 CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
-	$(CC) \
+	$(COMPILERS) \
 	$(TEST_PARAMETERS) \
-	cargo test $(PROFILE_FLAG) --features cca \
-	--target aarch64-unknown-linux-gnu
+		cargo test $(PROFILE_FLAG) $(TARGET) \
+			--features cca --features veracruz-server/vsock
 
 test-server: test-dependencies
 	$(CARGO_TEST) -p veracruz-server-test --no-run -- --nocapture
-	RUST_LOG="veracruz_server_test=info,error" $(CARGO_TEST) -p veracruz-server-test -- --test-threads=1 --nocapture
+	RUST_LOG="debug" $(CARGO_TEST) -p veracruz-server-test -- --test-threads=1 --nocapture
 
 test-client: test-dependencies
 	$(CARGO_TEST) -p veracruz-client --lib -- --test-threads=1
@@ -85,8 +91,7 @@ $(RUNTIME_ENCLAVE_BINARY_PATH):
 
 clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 	# workspace members and relevant dependencies
-	RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
-	$(CC) \
+	$(COMPILERS) \
 		cargo clippy $(PROFILE_FLAG) $(V_FLAG) \
 		-p proxy-attestation-server -p veracruz-client \
 		-p veracruz-server -p io-utils -p transport-protocol \
@@ -99,7 +104,7 @@ clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 		--features veracruz-utils/cca \
 		-- $(CLIPPY_OPTIONS)
 	# workspace testing crates
-	RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) $(CC) $(TEST_PARAMETERS) \
+	$(COMPILERS) $(TEST_PARAMETERS) \
 		cargo clippy --tests \
 		$(PROFILE_FLAG) -p veracruz-test -p veracruz-server-test \
 		--features veracruz-test/cca \
