@@ -15,6 +15,12 @@ path = "./src/lib.rs"
 # cannot connect)
 default = []
 debug = ["veracruz-server/debug"]
+cca = [
+  "policy-utils/std",
+  "proxy-attestation-server/cca",
+  "veracruz-server/cca",
+  "veracruz-utils/linux",
+]
 linux = [
   "linux-veracruz-server",
   "policy-utils/std",
