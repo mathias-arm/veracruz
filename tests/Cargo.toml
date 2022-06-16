@@ -12,6 +12,12 @@ version = "0.3.0"
 # Nitro enclave attestation documents have the PCRs zeroed out and the console
 # cannot connect)
 debug = ["veracruz-server/debug"]
+cca = [
+  "policy-utils/std",
+  "proxy-attestation-server/cca",
+  "veracruz-server/cca",
+  "veracruz-utils/linux",
+]
 icecap = [
   "policy-utils/icecap",
   "veracruz-server/icecap",
