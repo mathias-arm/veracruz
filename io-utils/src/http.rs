@@ -279,7 +279,7 @@ where
 
     info!("Response successfully parsed.");
 
-    #[cfg(any(feature = "linux", feature = "nitro", feature = "icecap"))]
+    #[cfg(any(feature = "linux", feature = "nitro", feature = "icecap", feature = "cca"))]
     if response.has_psa_attestation_init() {
         let (challenge, device_id) =
             parse_psa_attestation_init(response.get_psa_attestation_init()).map_err(|e| {

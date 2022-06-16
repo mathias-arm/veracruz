@@ -43,6 +43,8 @@ mod tests {
     };
     use transport_protocol;
     use veracruz_server::veracruz_server::*;
+    #[cfg(feature = "cca")]
+    use veracruz_server::VeracruzServerCCA as VeracruzServerEnclave;
     #[cfg(feature = "icecap")]
     use veracruz_server::VeracruzServerIceCap as VeracruzServerEnclave;
     #[cfg(feature = "linux")]

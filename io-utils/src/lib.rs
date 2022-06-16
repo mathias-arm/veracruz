@@ -13,6 +13,9 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
+#[macro_use]
+extern crate log;
+
 /// IO-related error type.
 pub mod error;
 #[cfg(any(feature = "nitro", feature = "linux"))]

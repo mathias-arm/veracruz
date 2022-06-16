@@ -18,7 +18,7 @@ pub mod veracruz_server_cca {
         http::{post_buffer, send_proxy_attestation_server_start},
         tcp::{receive_message, send_message},
     };
-    use log::{error, info};
+    use log::{error, info, warn};
     use nix::sys::signal;
     use policy_utils::policy::Policy;
     use rand::Rng;
@@ -34,12 +34,14 @@ pub mod veracruz_server_cca {
         io::{self, Read},
         net::{Shutdown, TcpStream},
         os::unix::fs::PermissionsExt,
+        os::unix::net::UnixStream,
         process::{Child, Command, Stdio},
         string::ToString,
         sync::{Arc, Mutex},
         thread::{self, sleep, JoinHandle},
         time::Duration,
     };
+    use std::os::unix::io::IntoRawFd;
     use tempfile::{self, TempDir};
     use transport_protocol::{
         parse_proxy_attestation_server_response, serialize_native_psa_attestation_token,
@@ -96,6 +98,10 @@ pub mod veracruz_server_cca {
         "{kernel_path}",
         "-initrd",
         "{initrd_path}",
+        "-netdev",
+        "user,id=netdev0",
+        "-semihosting-config",
+        "enable=on,target=native",
     ];
     const VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT: &[&str] = &[
         "-chardev",
@@ -155,14 +161,17 @@ pub mod veracruz_server_cca {
                 "VERACRUZ_CCA_QEMU_FLAGS",
                 VERACRUZ_CCA_QEMU_FLAGS_DEFAULT,
             )?;
-            let qemu_console_flags = env_flags(
-                "VERACRUZ_CCA_QEMU_CONSOLE_FLAGS",
-                VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT,
-            )?;
 
+            #[cfg(feature = "vsock")]
             let qemu_vsock_flags = env_flags(
                 "VERACRUZ_CCA_QEMU_VSOCK_FLAGS",
                 VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT,
+            )?;
+
+            #[cfg(not(feature = "vsock"))]
+            let qemu_console_flags = env_flags(
+                "VERACRUZ_CCA_QEMU_CONSOLE_FLAGS",
+                VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT,
             )?;
 
             // temporary directory for things
@@ -170,28 +179,39 @@ pub mod veracruz_server_cca {
 
             // create a temporary socket for communication
             let channel_path = tempdir.path().join("console0");
+            // let channel_path = std::path::PathBuf::from("/tmp/console0");
             println!("vc-server: using unix socket: {:?}", channel_path);
-
 
             let kernel_path = env::var("VERACRUZ_CCA_KERNEL_PATH")
                 .unwrap_or_else(|_| VERACRUZ_CCA_KERNEL_PATH_DEFAULT.to_string());
             let initrd_path =  env::var("VERACRUZ_CCA_INITRD_PATH")
                 .unwrap_or_else(|_| VERACRUZ_CCA_INITRD_PATH_DEFAULT.to_string());
 
+            let qemu_flags : Vec<String> = qemu_flags
+                .iter()
+                .map(|s| s.replace("{kernel_path}", &kernel_path))
+                .map(|s| s.replace("{initrd_path}", &initrd_path))
+                .collect();
+
+            #[cfg(feature = "vsock")]
+            let com_flags : Vec<String> = qemu_vsock_flags
+                .iter()
+                .map(|s| s.replace("{cid}", "3"))
+                .collect();
+            #[cfg(not(feature = "vsock"))]
+            let com_flags : Vec<String> = qemu_console_flags
+                .iter()
+                .map(|s| s.replace("{console0_path}", channel_path.to_str().unwrap()))
+                .collect();
+
+            println!("{:?} {:?} {:?}", qemu_bin, qemu_flags, com_flags);
+
             // startup qemu
             let child = Arc::new(Mutex::new(
                 Command::new(&qemu_bin[0])
                     .args(&qemu_bin[1..])
-                    .args(qemu_flags
-                        .iter()
-                        .map(|s| s.replace("{kernel_path}", &kernel_path))
-                        .map(|s| s.replace("{initrd_path}", &initrd_path))
-                    )
-                    .args(
-                        qemu_console_flags
-                            .iter()
-                            .map(|s| s.replace("{console0_path}", channel_path.to_str().unwrap())),
-                    )
+                    .args(qemu_flags)
+                    .args(com_flags)
                     .stdin(Stdio::null())
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())
@@ -231,55 +251,67 @@ pub mod veracruz_server_cca {
                 }
             });
 
+            thread::sleep(Duration::from_millis(5000));
+
             let channel = loop {
-                let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
-                let socket = nix::sys::socket::socket(
-                    nix::sys::socket::AddressFamily::Unix,
-                    nix::sys::socket::SockType::Stream,
-                    nix::sys::socket::SockFlag::empty(),
-                    None
-                )?;
+                #[cfg(not(feature = "vsock"))]
+                let (addr, socket) = {
+                    info!("Connecting to UNIX socket '{}'", channel_path.to_str().unwrap());
+                    let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
+                    let socket = nix::sys::socket::socket(
+                        nix::sys::socket::AddressFamily::Unix,
+                        nix::sys::socket::SockType::Stream,
+                        nix::sys::socket::SockFlag::empty(),
+                        None
+                    )?;
+                    (addr, socket)
+                };
+
+                #[cfg(feature = "vsock")]
+                let (addr, socket) = {
+                    info!("Connecting to vsock cid: {} port: {}", 3, VERACRUZ_PORT);
+                    let addr = nix::sys::socket::SockAddr::new_vsock(3, VERACRUZ_PORT);
+                    let socket = nix::sys::socket::socket(
+                        nix::sys::socket::AddressFamily::Vsock,
+                        nix::sys::socket::SockType::Stream,
+                        nix::sys::socket::SockFlag::empty(),
+                        None
+                    )?;
+                    nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReuseAddr, &true)?;
+                    nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReusePort, &true)?;
+                    (addr, socket)
+                };
+
                 match nix::sys::socket::connect(socket, &addr) {
-                    Ok(_) => break socket,
+                    Ok(_) => {
+                        info!("Connected");
+                        break socket
+                    }
                     Err(nix::Error::Sys(nix::errno::Errno::ECONNREFUSED)) => {
+                        warn!("Connection refused");
+                        thread::sleep(Duration::from_millis(100));
+                        continue;
+                    },
+                    Err(nix::Error::Sys(nix::errno::Errno::ENOENT)) => {
+                        warn!("Connection refused (not found)");
                         thread::sleep(Duration::from_millis(100));
                         continue;
                     },
                     Err(e) => {
+                        error!("Connection failed: {:?}", e);
                         return Err(VeracruzServerError::NixError(e))
                     },
 
                 }
             };
 
-            // // connect via socket
-            // let channel = loop {
-            //     match UnixStream::connect(&channel_path) {
-            //         Ok(channel) => {
-            //             break channel;
-            //         }
-            //         Err(err) if err.kind() == io::ErrorKind::NotFound => {
-            //             thread::sleep(Duration::from_millis(100));
-            //             continue;
-            //         }
-            //         // NOTE I don't know why this one happens
-            //         Err(err) if err.kind() == io::ErrorKind::ConnectionRefused => {
-            //             thread::sleep(Duration::from_millis(100));
-            //             continue;
-            //         }
-            //         Err(err) => {
-            //             return Err(CCAError::ChannelError(err).into());
-            //         }
-            //     };
-            // };
-
             Ok(CCAEnclave {
                 child,
+                channel,
                 stdout_handler,
                 stderr_handler,
                 signal_handle,
                 signal_handler,
-                channel,
                 tempdir,
             })
         }
@@ -457,14 +489,14 @@ pub mod veracruz_server_cca {
             //     .expect("sigaction failed");
             // }
 
+            let mut enclave = Self{enclave: CCAEnclave::spawn()?};
+
             let (device_id, challenge) = send_proxy_attestation_server_start(
                 policy.proxy_attestation_server_url(),
-                "psa",
+                PROXY_ATTESTATION_PROTOCOL,
                 FIRMWARE_VERSION,
             )
             .map_err(VeracruzServerError::HttpError)?;
-
-            let mut enclave = Self{enclave: CCAEnclave::spawn()?};
 
             let (token, csr) =
             match enclave.communicate(&RuntimeManagerRequest::Attestation(challenge, device_id))? {

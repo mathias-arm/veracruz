@@ -11,7 +11,7 @@
 
 #[cfg(feature = "nitro")]
 pub mod nitro;
-#[cfg(any(feature = "linux", feature = "icecap"))]
+#[cfg(any(feature = "linux", feature = "cca", feature = "icecap"))]
 pub mod psa;
 
 use crate::error::*;
@@ -110,7 +110,7 @@ pub async fn start(body_string: String) -> ProxyAttestationServerResponder {
     let device_id = DEVICE_ID.fetch_add(1, Ordering::SeqCst);
 
     match protocol.as_str() {
-        #[cfg(any(feature = "linux", feature = "icecap"))]
+        #[cfg(any(feature = "linux", feature = "cca", feature = "icecap"))]
         "psa" => psa::start(&firmware_version, device_id),
         #[cfg(feature = "nitro")]
         "nitro" => nitro::start(&firmware_version, device_id),
