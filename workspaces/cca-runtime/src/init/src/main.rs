@@ -49,7 +49,7 @@ fn main() -> Result<(), Error> {
     mount(devtmpfs, "/dev", devtmpfs, MsFlags::MS_NOSUID, Some("mode=0755"))?;
 
     // Initialize logging
-    env_logger::builder().parse_filters("init=debug").init();
+    env_logger::builder().parse_filters("debug").init();
 
     // Log retroactively :)
     info!("Starting init");
@@ -77,7 +77,7 @@ fn main() -> Result<(), Error> {
         let sockaddr = SockAddr::new_vsock(CID, PORT);
         bind(socket_fd, &sockaddr)?;
         listen(socket_fd, BACKLOG)?;
-        debug!("Waiting for vsock connection");
+        debug!("Waiting for vsock connection on port {}", PORT);
         let f = accept(socket_fd)?;
         debug!("vsock connection accepted");
         f
@@ -86,9 +86,12 @@ fn main() -> Result<(), Error> {
     #[cfg(not(feature = "vsock"))]
     let fd = {
         info!("Using virtio-console");
-        open("/dev/hvc0", OFlag::empty(), Mode::empty())?
+        let f = open("/dev/hvc0", OFlag::empty(), Mode::empty())?;
+        debug!("Opened /dev/hvc0");
+        f
     };
-    debug!("Opened /dev/hvc0");
+
+    let mut finished = false;
 
     // loop {
     //     let mut c = [0u8; 1];
@@ -101,15 +104,19 @@ fn main() -> Result<(), Error> {
     //         }
     //     }
     //     if c[0] == 'q' as u8 {
+    //         finished = true;
     //         break;
     //     }
     // }
 
     loop {
-        let mut finished = false;
-
+        if finished {
+            break;
+        }
+        debug!("Before receive_buffer()");
         let received_buffer =
             receive_buffer(fd).map_err(|err| RuntimeManagerError::VeracruzSocketError(err))?;
+        debug!("After receive_buffer()");
         let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)
             .map_err(|err| RuntimeManagerError::BincodeError(err))?;
         let return_message = match received_message {
@@ -178,10 +185,6 @@ fn main() -> Result<(), Error> {
         );
         send_buffer(fd, &return_buffer)
             .map_err(|err| RuntimeManagerError::VeracruzSocketError(err))?;
-
-        if finished {
-            break;
-        }
     }
 
 

@@ -21,7 +21,7 @@ all: cca
 
 cca: runtime-manager-enclave initrd.cpio
 
-CC = CC_aarch64_unknown_linux_musl=/work/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc \
+COMPILERS = CC_aarch64_unknown_linux_musl=/work/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc \
 	LD_aarch64_unknown_linux_musl=/work/aarch64-linux-musl-cross/bin/aarch64-linux-musl-ld
 
 initrd.cpio: runtime-manager-enclave
@@ -36,23 +36,19 @@ initrd.cpio: runtime-manager-enclave
 
 run: cca Image
 	qemu-system-aarch64 -machine virt -cpu cortex-a57 -smp 4 -m 3072 \
-	    -device vhost-vsock-pci,guest-cid=3 \
+		-device vhost-vsock-pci,guest-cid=3 \
+		-netdev user,id=netdev0 \
 		-serial mon:stdio -nographic \
 		-semihosting-config enable=on,target=native \
 		-chardev socket,path=./socket,server=on,wait=off,id=charconsole0 \
     	-device virtio-serial-device -device virtconsole,chardev=charconsole0,id=console0 \
 		-kernel Image.guest -initrd initrd.cpio
 
-	# 		-netdev user,id=netdev0 \
-
-
 runtime-manager-enclave:
 	rustup target add aarch64-unknown-linux-musl
-	$(CC) \
-	cargo build $(PROFILE_FLAG) $(V_FLAG) \
+	$(COMPILERS) cargo build $(PROFILE_FLAG) $(V_FLAG) \
 		--target aarch64-unknown-linux-musl \
-		--features cca,vsock -p init
-		# -p runtime_manager_enclave
+		--features cca --features vsock -p init
 
 doc:
 	cargo doc
