@@ -6,7 +6,7 @@ use core::{convert::TryFrom, mem::size_of};
 use anyhow::Error;
 use nix::mount::{mount, MsFlags}; // MntFlags
 use nix::sys::stat::Mode;
-use nix::unistd::{mkdir, read};
+use nix::unistd::{mkdir, read, close};
 
 use io_utils::raw_fd::{receive_buffer, send_buffer};
 
@@ -19,11 +19,11 @@ use runtime_manager_enclave::managers::{self, RuntimeManagerError};
 #[cfg(feature = "vsock")]
 use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockAddr, SockFlag, SockType};
 
-#[cfg(not(feature = "vsock"))]
 use nix::fcntl::{open, OFlag};
 
 use bincode;
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 /// The CID for the VSOCK to listen on
 /// Currently set to all 1's so it will listen on all of them
@@ -59,11 +59,6 @@ fn main() -> Result<(), Error> {
     mkdir("/proc", chmod_0555).ok();
     mount::<_, _, _, [u8]>(Some("proc"), "/proc", Some("proc"), common_mnt_flags, None)?;
 
-    // let paths = fs::read_dir("/dev").unwrap();
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display())
-    // }
-
     #[cfg(feature = "vsock")]
     let fd = {
         info!("Using vsock");
@@ -92,22 +87,6 @@ fn main() -> Result<(), Error> {
     };
 
     let mut finished = false;
-
-    // loop {
-    //     let mut c = [0u8; 1];
-    //     match read(fd, &mut c) {
-    //         Ok(_) => {
-    //             println!("Read {:?}", c[0]);
-    //         },
-    //         Err(e) => {
-    //             println!("{:?}", e);
-    //         }
-    //     }
-    //     if c[0] == 'q' as u8 {
-    //         finished = true;
-    //         break;
-    //     }
-    // }
 
     loop {
         if finished {
@@ -194,6 +173,21 @@ fn main() -> Result<(), Error> {
         .map_err(Error::from)
 }
 
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub struct cca_ioctl_request {
+    challenge: [u8; 64],
+    token: [u8; 4096],
+    token_length: u64,
+}
+
+fn bytes_to_hex(bytes : &[u8]) -> String {
+    let hex_bytes : Vec<String> = bytes.iter()
+        .map(|b| format!("{:02x}", b)).collect();
+    hex_bytes.join("")
+}
+
+nix::ioctl_readwrite!(cca_attestation_request, b'A', 1, cca_ioctl_request);
 
 fn attestation(
     challenge: &[u8],
@@ -203,8 +197,64 @@ fn attestation(
     managers::session_manager::init_session_manager()?;
     // generate the csr
     let csr: Vec<u8> = managers::session_manager::generate_csr()?;
-    // TODO: generate the attestation document
-    return Ok(RuntimeManagerResponse::AttestationData(vec![], csr));
+
+    #[cfg(not(feature = "qemu"))]
+    match open("/dev/attestation", OFlag::empty(), Mode::empty()) {
+        Ok(f) => {
+            info!("runtime_manager_cca::attestation opening attestation succeeded");
+            let mut r = cca_ioctl_request {
+                challenge: [0u8; 64],
+                token: [0u8; 4096],
+                token_length: 0u64
+            };
+            match unsafe { cca_attestation_request(f, &mut r) } {
+                Ok(c) => {
+                    close(f);
+                    info!("runtime_manager_cca::attestation ioctl call succeeded ({})", c);
+                    info!("runtime_manager_cca::attestation token is {} bytes long", r.token_length);
+                    let hex = bytes_to_hex(&r.token[0..(r.token_length as usize)]);
+                    info!("runtime_manager_cca::attestation token = {:x?}", hex);
+                    let token = r.token[0..(r.token_length as usize)].to_vec();
+                    Ok(RuntimeManagerResponse::AttestationData(token, csr))
+                }
+                Err(e) => {
+                    close(f);
+                    error!("runtime_manager_cca::attestation ioctl failed! {}", e);
+                    Err(RuntimeManagerError::AttestationError(e))
+                }
+            }
+        }
+        Err(err) => {
+            error!("runtime_manager_cca::attestation opening attestation failed! {}", err);
+            Err(RuntimeManagerError::AttestationError(err))
+        }
+    }
+
+    #[cfg(feature = "qemu")]
+    {
+        let token_hex = "\
+        d28444a1013822a05901c9a60a58400000000000000000000000000000000000
+        0000000000000000000000000000000000000000000000000000000000000000
+        00000000000000000000000000000019620d5820aea131de37171000aabbccdd
+        eeff001122334455667788990123456789abcdef19620ef519621158610476f9
+        88091be585ed41801aecfab858548c63057e16b0e676120bbd0d2f9c29e056c5
+        d41a0130eb9c21517899dc23146b28e1b062bd3ea4b315fd219f1cbb528cb6e7
+        4ca49be16773734f61a1ca61031b2bbf3d918f2f94ffc4228e50919544ae1962
+        100119620f875820000000000000000000000000000000000000000000000000
+        0000000000000000582000000000000000000000000000000000000000000000
+        0000000000000000000058200000000000000000000000000000000000000000
+        0000000000000000000000005820000000000000000000000000000000000000
+        0000000000000000000000000000582000000000000000000000000000000000
+        0000000000000000000000000000000058200000000000000000000000000000
+        0000000000000000000000000000000000005820000000000000000000000000
+        00000000000000000000000000000000000000005860e8918241325ec38f58cd
+        16580233a728271df36ec98d411c859d220cf3ae3e1f386ed7041ecc232082ba
+        51c133a09793c2cb44b4b58880e05459e3091687216ba61eab1b4eeccd504718
+        af06b4df5a2da171de4a2e27d54a4fe145904857cbe5";
+        let token_hex : String = token_hex.chars().filter(|c| !c.is_whitespace()).collect();
+        let token = hex::decode(token_hex).ok().unwrap();
+        Ok(RuntimeManagerResponse::AttestationData(token, csr))
+    }
 }
 
 /// Handler for the RuntimeManagerRequest::Initialize message
