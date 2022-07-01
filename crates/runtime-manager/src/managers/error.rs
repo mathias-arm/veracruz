@@ -12,7 +12,7 @@
 use err_derive::Error;
 #[cfg(feature = "nitro")]
 use io_utils::error::SocketError;
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "cca", feature = "nitro"))]
 use nix;
 
 #[derive(Debug, Error)]
@@ -51,4 +51,7 @@ pub enum RuntimeManagerError {
     LockSessionManager,
     #[error(display = "RuntimeManager: Failed to obtain lock on session table.")]
     LockSessionTable,
+    #[cfg(feature = "cca")]
+    #[error(display = "RuntimeManager: Attestation Error: {:?}", _0)]
+    AttestationError(nix::Error),
 }
