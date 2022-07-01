@@ -91,6 +91,9 @@ pub enum RuntimeManagerError {
     IOError(IOError),
     #[error(display = "RuntimeManager: Execution denied.")]
     ExecutionDenied,
+    #[cfg(feature = "cca")]
+    #[error(display = "RuntimeManager: Attestation Error: {:?}", _0)]
+    AttestationError(nix::Error),
 }
 
 impl<T> From<PoisonError<T>> for RuntimeManagerError {
