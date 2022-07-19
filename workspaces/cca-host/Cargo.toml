@@ -16,6 +16,7 @@ cargo-features = ["resolver"]
 exclude = [
   "crates/third-party/rust-mbedtls",
   "crates/third-party/rust-psa-crypto",
+  "src/attestation",
 ]
 members = [
   "crates/proxy-attestation-server",
