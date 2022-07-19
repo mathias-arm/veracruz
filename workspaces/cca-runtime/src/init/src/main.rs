@@ -33,6 +33,9 @@ const PORT: u32 = 5005;
 /// max number of outstanding connectiosn in the socket listen queue
 const BACKLOG: usize = 1;
 
+// Just request an attestation token and exit
+const ATTESTATION_TEST: bool = false;
+
 fn main() -> Result<(), Error> {
     std::env::set_var("RUST_BACKTRACE", "full");
 
@@ -58,6 +61,15 @@ fn main() -> Result<(), Error> {
     debug!("Mounting /proc");
     mkdir("/proc", chmod_0555).ok();
     mount::<_, _, _, [u8]>(Some("proc"), "/proc", Some("proc"), common_mnt_flags, None)?;
+
+    if ATTESTATION_TEST {
+        let challenge = [0u8; 64];
+        attestation(&challenge, 0);
+        info!("Shutting down");
+        return nix::sys::reboot::reboot(nix::sys::reboot::RebootMode::RB_POWER_OFF)
+            .map(|_| {})
+            .map_err(Error::from);
+    }
 
     #[cfg(feature = "vsock")]
     let fd = {
@@ -199,7 +211,7 @@ fn attestation(
     let csr: Vec<u8> = managers::session_manager::generate_csr()?;
 
     #[cfg(not(feature = "qemu"))]
-    match open("/dev/attestation", OFlag::empty(), Mode::empty()) {
+    match open("/dev/cca_attestation", OFlag::empty(), Mode::empty()) {
         Ok(f) => {
             info!("runtime_manager_cca::attestation opening attestation succeeded");
             let mut r = cca_ioctl_request {
@@ -207,6 +219,14 @@ fn attestation(
                 token: [0u8; 4096],
                 token_length: 0u64
             };
+
+            let mut i : usize = 0;
+            let j : usize = std::cmp::min(r.challenge.len(), challenge.len());
+            while i < r.challenge.len() && i < challenge.len() {
+                r.challenge[i] = challenge[i];
+                i += 1;
+            }
+
             match unsafe { cca_attestation_request(f, &mut r) } {
                 Ok(c) => {
                     close(f);

@@ -14,6 +14,13 @@
 default: all
 
 WORKSPACE_DIR = $(abspath ..)
+QEMU ?= 0
+
+ifeq ($(QEMU), 0)
+    QEMU_FEATURE =
+else
+    QEMU_FEATURE = --features qemu
+endif
 
 include $(WORKSPACE_DIR)/common.mk
 
@@ -34,7 +41,11 @@ initrd.cpio: runtime-manager-enclave
 
 .PHONY: run
 
-run: cca Image
+Image.guest:
+	echo "Copy Image.guest file"
+	/bin/false
+
+run: cca Image.guest
 	qemu-system-aarch64 -machine virt -cpu cortex-a57 -smp 4 -m 3072 \
 		-device vhost-vsock-pci,guest-cid=3 \
 		-netdev user,id=netdev0 \
@@ -48,7 +59,7 @@ runtime-manager-enclave:
 	rustup target add aarch64-unknown-linux-musl
 	$(COMPILERS) cargo build $(PROFILE_FLAG) $(V_FLAG) \
 		--target aarch64-unknown-linux-musl \
-		--features cca --features vsock --features qemu -p init
+		--features cca $(QEMU_FEATURE) --features vsock -p init
 
 doc:
 	cargo doc
