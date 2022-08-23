@@ -19,6 +19,8 @@ use common::event::TestEvent;
 use common::proxy_attestation_server::*;
 use common::util::*;
 use env_logger;
+#[cfg(feature = "cca")]
+use cca_veracruz_server::cca::VeracruzServerCCA as VeracruzServerEnclave;
 #[cfg(any(feature = "icecap-qemu", feature = "icecap"))]
 use icecap_veracruz_server::server::VeracruzServerIceCap as VeracruzServerEnclave;
 #[cfg(feature = "linux")]
