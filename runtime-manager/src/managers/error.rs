@@ -10,7 +10,7 @@
 //! information on licensing and copyright.
 
 use err_derive::Error;
-#[cfg(feature = "nitro")]
+#[cfg(any(feature = "cca", feature = "nitro"))]
 use io_utils::error::SocketError;
 #[cfg(any(feature = "cca", feature = "nitro"))]
 use nix;

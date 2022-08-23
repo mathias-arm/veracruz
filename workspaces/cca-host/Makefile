@@ -51,7 +51,7 @@ all: build test-collateral
 
 build:
 	$(COMPILERS) \
-		cargo build $(PROFILE_FLAG) $(V_FLAG) \
+		cargo build $(PROFILE_FLAG) $(V_FLAG) $(TARGET) \
 		-p proxy-attestation-server \
 		-p veracruz-client -p veracruz-server \
 		--features proxy-attestation-server/cca \
@@ -79,15 +79,17 @@ CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
 			--features cca --features veracruz-server/vsock $(QEMU_FEATURE)
 
 test-server: test-dependencies
-	$(CARGO_TEST) -p veracruz-server-test --no-run -- --nocapture
-	RUST_LOG="debug" $(CARGO_TEST) -p veracruz-server-test -- --test-threads=1 --nocapture
+	$(CARGO_TEST) -p tests --no-run -- --nocapture
+	RUST_LOG="server_test=info,error" \
+		$(CARGO_TEST) -p tests --test server_test -- --test-threads=1 --nocapture
 
 test-client: test-dependencies
 	$(CARGO_TEST) -p veracruz-client --lib -- --test-threads=1
 
 veracruz-test: test-dependencies
-	$(CARGO_TEST) -p veracruz-test --no-run
-	$(CARGO_TEST) -p veracruz-test -- --test-threads=1
+	$(CARGO_TEST) -p tests --no-run
+	RUST_LOG="integration_test=info,error" \
+		$(CARGO_TEST) -p tests --test integration_test -- --test-threads=1
 
 $(RUNTIME_ENCLAVE_BINARY_PATH):
 	$(MAKE) -C ../cca-runtime QEMU=$(QEMU) cca
@@ -109,7 +111,7 @@ clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 	# workspace testing crates
 	$(COMPILERS) $(TEST_PARAMETERS) \
 		cargo clippy --tests \
-		$(PROFILE_FLAG) -p veracruz-test -p veracruz-server-test \
+		$(PROFILE_FLAG) -p tests \
 		--features veracruz-test/cca \
 		--features veracruz-server-test/cca \
 		-- $(CLIPPY_OPTIONS)
