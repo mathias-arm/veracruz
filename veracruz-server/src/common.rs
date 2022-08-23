@@ -9,6 +9,8 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
+#[cfg(feature = "cca")]
+use crate::platforms::cca::CCAError;
 #[cfg(feature = "icecap")]
 use crate::platforms::icecap::IceCapError;
 use err_derive::Error;
@@ -30,13 +32,13 @@ pub enum VeracruzServerError {
     LockError(String),
     #[error(display = "VeracruzServer: ParseIntError: {}.", _0)]
     ParseIntError(#[error(source)] std::num::ParseIntError),
-    #[cfg(any(feature = "linux", feature = "nitro"))]
+    #[cfg(any(feature = "linux", feature = "nitro", feature = "cca"))]
     #[error(display = "VeracruzServer: BincodeError: {:?}", _0)]
     BincodeError(bincode::ErrorKind),
     #[cfg(any(feature = "nitro", feature = "linux"))]
     #[error(display = "VeracruzServer: Status: {:?}", _0)]
     Status(veracruz_utils::runtime_manager_message::Status),
-    #[cfg(any(feature = "linux", feature = "nitro"))]
+    #[cfg(any(feature = "linux", feature = "nitro", feature = "cca"))]
     #[error(
         display = "VeracruzServer: Received Invalid Runtime Manager response: {:?}",
         _0
@@ -45,7 +47,7 @@ pub enum VeracruzServerError {
     #[cfg(feature = "nitro")]
     #[error(display = "VeracruzServer: Received Invalid Protocol Buffer Message")]
     InvalidProtoBufMessage,
-    #[cfg(feature = "nitro")]
+    #[cfg(any(feature = "nitro", feature = "cca"))]
     #[error(display = "VeracruzServer: Nix Error: {:?}", _0)]
     NixError(#[error(source)] nix::Error),
     #[cfg(feature = "nitro")]
@@ -54,6 +56,9 @@ pub enum VeracruzServerError {
     #[cfg(feature = "nitro")]
     #[error(display = "VeracruzServer: Nitro Error:{:?}", _0)]
     NitroError(#[error(source)] NitroError),
+    #[cfg(feature = "cca")]
+    #[error(display = "VeracruzServer: CCA error: {:?}", _0)]
+    CCAError(#[error(source)] CCAError),
     #[cfg(feature = "icecap")]
     #[error(display = "VeracruzServer: IceCap error: {:?}", _0)]
     IceCapError(#[error(source)] IceCapError),
@@ -89,7 +94,7 @@ impl From<anyhow::Error> for VeracruzServerError {
     }
 }
 
-#[cfg(feature = "nitro")]
+#[cfg(feature = "nitro", feature = "cca")]
 impl From<std::boxed::Box<bincode::ErrorKind>> for VeracruzServerError {
     fn from(error: std::boxed::Box<bincode::ErrorKind>) -> Self {
         VeracruzServerError::BincodeError(*error)

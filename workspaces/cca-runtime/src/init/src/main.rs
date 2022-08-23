@@ -3,7 +3,7 @@ extern crate log;
 
 use core::{convert::TryFrom, mem::size_of};
 
-use anyhow::Error;
+use anyhow::{anyhow, Error, Result};
 use nix::mount::{mount, MsFlags}; // MntFlags
 use nix::sys::stat::Mode;
 use nix::unistd::{mkdir, read, close};
@@ -36,7 +36,7 @@ const BACKLOG: usize = 1;
 // Just request an attestation token and exit
 const ATTESTATION_TEST: bool = false;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     std::env::set_var("RUST_BACKTRACE", "full");
 
     // These cannot currently be constants
@@ -104,12 +104,8 @@ fn main() -> Result<(), Error> {
         if finished {
             break;
         }
-        debug!("Before receive_buffer()");
-        let received_buffer =
-            receive_buffer(fd).map_err(|err| RuntimeManagerError::VeracruzSocketError(err))?;
-        debug!("After receive_buffer()");
-        let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)
-            .map_err(|err| RuntimeManagerError::BincodeError(err))?;
+        let received_buffer = receive_buffer(fd)?;
+        let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)?;
         let return_message = match received_message {
             RuntimeManagerRequest::Attestation(challenge, challenge_id) => {
                 attestation(&challenge, challenge_id)?
@@ -168,14 +164,12 @@ fn main() -> Result<(), Error> {
                 RuntimeManagerResponse::Status(Status::Unimplemented)
             }
         };
-        let return_buffer = bincode::serialize(&return_message)
-            .map_err(|err| RuntimeManagerError::BincodeError(err))?;
-            debug!(
+        let return_buffer = bincode::serialize(&return_message)?;
+        debug!(
             "runtime_manager_cca::main calling send buffer with buffer_len:{:?}",
             return_buffer.len()
         );
-        send_buffer(fd, &return_buffer)
-            .map_err(|err| RuntimeManagerError::VeracruzSocketError(err))?;
+        send_buffer(fd, &return_buffer)?;
     }
 
 
@@ -201,10 +195,7 @@ fn bytes_to_hex(bytes : &[u8]) -> String {
 
 nix::ioctl_readwrite!(cca_attestation_request, b'A', 1, cca_ioctl_request);
 
-fn attestation(
-    challenge: &[u8],
-    _challenge_id: i32,
-) -> Result<RuntimeManagerResponse, RuntimeManagerError> {
+fn attestation(challenge: &[u8], _challenge_id: i32) -> Result<RuntimeManagerResponse> {
     info!("runtime_manager_cca::attestation started");
     managers::session_manager::init_session_manager()?;
     // generate the csr
@@ -240,13 +231,13 @@ fn attestation(
                 Err(e) => {
                     close(f);
                     error!("runtime_manager_cca::attestation ioctl failed! {}", e);
-                    Err(RuntimeManagerError::AttestationError(e))
+                    Err(anyhow!(RuntimeManagerError::AttestationError(e)))
                 }
             }
         }
         Err(err) => {
             error!("runtime_manager_cca::attestation opening attestation failed! {}", err);
-            Err(RuntimeManagerError::AttestationError(err))
+            Err(anyhow!(RuntimeManagerError::AttestationError(err)))
         }
     }
 
@@ -278,10 +269,7 @@ fn attestation(
 }
 
 /// Handler for the RuntimeManagerRequest::Initialize message
-fn initialize(
-    policy_json: &str,
-    cert_chain: &Vec<Vec<u8>>,
-) -> Result<RuntimeManagerResponse, RuntimeManagerError> {
+fn initialize(policy_json: &str, cert_chain: &Vec<Vec<u8>>) -> Result<RuntimeManagerResponse> {
     managers::session_manager::load_policy(policy_json)?;
     info!("runtime_manager_cca::initialize started");
     managers::session_manager::load_cert_chain(cert_chain)?;

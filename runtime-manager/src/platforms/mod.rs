@@ -11,7 +11,7 @@
 
 #[cfg(feature = "icecap")]
 pub mod icecap;
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", not(feature = "cca")))]
 pub mod linux;
 #[cfg(feature = "nitro")]
 pub mod nitro;

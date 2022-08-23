@@ -9,7 +9,7 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-use crate::{veracruz_server::VeracruzServer, VeracruzServerError};
+use crate::common::{VeracruzServer, VeracruzServerError};
 use err_derive::Error;
 use io_utils::{
     http::{post_buffer, send_proxy_attestation_server_start},
@@ -57,22 +57,22 @@ pub enum CCAError {
     #[error(display = "CCA: Qemu spawn error: {}", _0)]
     QemuSpawnError(io::Error),
     #[error(display = "CCA: Serialization error: {}", _0)]
-    SerializationError(bincode::Error),
+    SerializationError(#[error(source)] bincode::Error),
     #[error(display = "CCA: Unexpected response from runtime manager: {:?}", _0)]
     UnexpectedRuntimeManagerResponse(RuntimeManagerResponse),
 }
 
-impl From<CCAError> for VeracruzServerError {
-    fn from(err: CCAError) -> VeracruzServerError {
-        VeracruzServerError::CCAError(err)
-    }
-}
+// impl From<CCAError> for VeracruzServerError {
+//     fn from(err: CCAError) -> VeracruzServerError {
+//         VeracruzServerError::CCAError(err)
+//     }
+// }
 
-impl From<bincode::Error> for VeracruzServerError {
-    fn from(err: bincode::Error) -> VeracruzServerError {
-        VeracruzServerError::from(CCAError::SerializationError(err))
-    }
-}
+// impl From<bincode::Error> for VeracruzServerError {
+//     fn from(err: bincode::Error) -> VeracruzServerError {
+//         VeracruzServerError::from(CCAError::SerializationError(err))
+//     }
+// }
 
 ////////////////////////////////////////////////////////////////////////////
 // Constants.
@@ -455,14 +455,7 @@ impl VeracruzServer for VeracruzServerCCA {
     {
         // TODO: add in dummy measurement and attestation token issuance here
         // which will use fields from the JSON policy file.
-        let policy = Policy::from_json(policy_json).map_err(|e| {
-            error!(
-                "Failed to parse Veracruz policy file.  Error produced: {:?}.",
-                e
-            );
-
-            VeracruzServerError::VeracruzUtilError(e)
-        })?;
+        let policy = Policy::from_json(policy_json)?;
 
         // // Choose a port number at random (to reduce risk of collision
         // // with another test that is still running).
@@ -492,8 +485,7 @@ impl VeracruzServer for VeracruzServerCCA {
             policy.proxy_attestation_server_url(),
             PROXY_ATTESTATION_PROTOCOL,
             FIRMWARE_VERSION,
-        )
-        .map_err(VeracruzServerError::HttpError)?;
+        )?;
 
         let (token, csr) =
         match enclave.communicate(&RuntimeManagerRequest::Attestation(challenge, device_id))? {
@@ -507,17 +499,15 @@ impl VeracruzServer for VeracruzServerCCA {
 
         let (root_cert, compute_cert) = {
             let req =
-                transport_protocol::serialize_native_psa_attestation_token(&token, &csr, device_id)
-                    .map_err(VeracruzServerError::TransportProtocolError)?;
+                transport_protocol::serialize_native_psa_attestation_token(&token, &csr, device_id)?;
             let req = base64::encode(&req);
             let url = format!(
                 "{:}/PSA/AttestationToken",
                 policy.proxy_attestation_server_url()
             );
-            let resp = post_buffer(&url, &req).map_err(VeracruzServerError::HttpError)?;
+            let resp = post_buffer(&url, &req)?;
             let resp = base64::decode(&resp)?;
-            let pasr = transport_protocol::parse_proxy_attestation_server_response(None, &resp)
-                .map_err(VeracruzServerError::TransportProtocolError)?;
+            let pasr = transport_protocol::parse_proxy_attestation_server_response(None, &resp)?;
             let cert_chain = pasr.get_cert_chain();
             let root_cert = cert_chain.get_root_cert();
             let compute_cert = cert_chain.get_enclave_cert();
@@ -577,18 +567,13 @@ impl VeracruzServer for VeracruzServerCCA {
                 info!("TLS session successfully closed.");
                 Ok(())
             }
-            RuntimeManagerResponse::Status(status) => {
-                error!("TLS session close request resulted in unexpected status message.  Received: {:?}.", status);
-                Err(VeracruzServerError::Status(status))
-            }
             otherwise => {
                 error!(
                     "Unexpected response returned from enclave.  Received: {:?}.",
                     otherwise
                 );
-                Err(VeracruzServerError::InvalidRuntimeManagerResponse(
-                    otherwise,
-                ))
+                Err(VeracruzServerError::CCAError(
+                    CCAError::UnexpectedRuntimeManagerResponse(otherwise)))
             }
         }
     }
@@ -608,10 +593,6 @@ impl VeracruzServer for VeracruzServerCCA {
         match message {
             RuntimeManagerResponse::Status(Status::Success) => {
                 info!("Runtime Manager enclave successfully received TLS data.")
-            }
-            RuntimeManagerResponse::Status(otherwise) => {
-                error!("Runtime Manager enclave failed to receive TLS data.  Response received: {:?}.", otherwise);
-                return Err(VeracruzServerError::Status(otherwise));
             }
             otherwise => {
                 error!("Runtime Manager enclave produced an unexpected response to TLS data.  Response received: {:?}.", otherwise);
