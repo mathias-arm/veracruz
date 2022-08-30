@@ -9,7 +9,7 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-use crate::common::{VeracruzServer, VeracruzServerError};
+use crate::common::{VeracruzServer, VeracruzServerError, VeracruzServerResult};
 use err_derive::Error;
 use io_utils::{
     http::{post_buffer, send_proxy_attestation_server_start},
@@ -337,8 +337,6 @@ impl CCAEnclave {
     }
 }
 
-
-
 pub struct VeracruzServerCCA {
     enclave: CCAEnclave,
 }
@@ -448,38 +446,13 @@ impl Drop for VeracruzServerCCA {
 }
 
 impl VeracruzServer for VeracruzServerCCA {
-    /// Creates a new instance of the `VeracruzServerCCA` type.
-    fn new(policy_json: &str) -> Result<Self, VeracruzServerError>
-    where
-        Self: Sized,
+    fn new(policy_json: &str) -> VeracruzServerResult<Self>
     {
-        // TODO: add in dummy measurement and attestation token issuance here
-        // which will use fields from the JSON policy file.
         let policy = Policy::from_json(policy_json)?;
 
-        // // Choose a port number at random (to reduce risk of collision
-        // // with another test that is still running).
-        // let port = rand::thread_rng()
-        //     .gen_range(RUNTIME_MANAGER_ENCLAVE_PORT_MIN..RUNTIME_MANAGER_ENCLAVE_PORT_MAX + 1);
-        // info!(
-        //     "Starting runtime manager enclave (using binary {:?} and port {})",
-        //     runtime_enclave_binary_path, port
-        // );
-
-        // // Ignore SIGCHLD to avoid zombie processes.
-        // unsafe {
-        //     signal::sigaction(
-        //         signal::Signal::SIGCHLD,
-        //         &signal::SigAction::new(
-        //             signal::SigHandler::SigIgn,
-        //             signal::SaFlags::empty(),
-        //             signal::SigSet::empty(),
-        //         ),
-        //     )
-        //     .expect("sigaction failed");
-        // }
-
+        info!("VeracruzServerCCA::new starting enclave");
         let mut enclave = Self{enclave: CCAEnclave::spawn()?};
+        info!("VeracruzServerCCA::new started enclave");
 
         let (device_id, challenge) = send_proxy_attestation_server_start(
             policy.proxy_attestation_server_url(),
@@ -491,6 +464,7 @@ impl VeracruzServer for VeracruzServerCCA {
         match enclave.communicate(&RuntimeManagerRequest::Attestation(challenge, device_id))? {
             RuntimeManagerResponse::AttestationData(token, csr) => (token, csr),
             resp => {
+                error!("VeracruzServerCCA::new AttestationData error: {:?}", resp);
                 return Err(VeracruzServerError::CCAError(
                     CCAError::UnexpectedRuntimeManagerResponse(resp),
                 ))
@@ -502,7 +476,7 @@ impl VeracruzServer for VeracruzServerCCA {
                 transport_protocol::serialize_native_psa_attestation_token(&token, &csr, device_id)?;
             let req = base64::encode(&req);
             let url = format!(
-                "{:}/PSA/AttestationToken",
+                "{:}/CCA/AttestationToken",
                 policy.proxy_attestation_server_url()
             );
             let resp = post_buffer(&url, &req)?;
@@ -530,14 +504,11 @@ impl VeracruzServer for VeracruzServerCCA {
     }
 
     #[inline]
-    fn plaintext_data(
-        &mut self,
-        _data: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, VeracruzServerError> {
+    fn plaintext_data(&mut self, _data: Vec<u8>) -> VeracruzServerResult<Option<Vec<u8>>> {
         Err(VeracruzServerError::UnimplementedError)
     }
 
-    fn new_tls_session(&mut self) -> Result<u32, VeracruzServerError> {
+    fn new_tls_session(&mut self) -> VeracruzServerResult<u32> {
         info!("Requesting new TLS session.");
 
         let message: RuntimeManagerResponse = self.communicate(&RuntimeManagerRequest::NewTlsSession)?;
@@ -558,7 +529,7 @@ impl VeracruzServer for VeracruzServerCCA {
         }
     }
 
-    fn close_tls_session(&mut self, session_id: u32) -> Result<(), VeracruzServerError> {
+    fn close_tls_session(&mut self, session_id: u32) -> VeracruzServerResult<()> {
         info!("Requesting close of TLS session with ID: {}.", session_id);
 
         let message: RuntimeManagerResponse = self.communicate(&RuntimeManagerRequest::CloseTlsSession(session_id))?;
@@ -582,7 +553,7 @@ impl VeracruzServer for VeracruzServerCCA {
         &mut self,
         session_id: u32,
         input: Vec<u8>,
-    ) -> Result<(bool, Option<Vec<Vec<u8>>>), VeracruzServerError> {
+    ) -> VeracruzServerResult<(bool, Option<Vec<Vec<u8>>>)> {
         info!(
             "Sending TLS data to runtime manager enclave (with session {}).",
             session_id
@@ -632,16 +603,5 @@ impl VeracruzServer for VeracruzServerCCA {
     fn shutdown_isolate(&mut self) -> Result<(), Box<dyn Error>> {
         unsafe { self.enclave.shutdown()?; };
         Ok(())
-
-        // info!("Shutting down Linux runtime manager enclave.");
-
-        // info!("Closing TCP connection...");
-        // self.runtime_manager_socket.shutdown(Shutdown::Both)?;
-
-        // info!("Killing and Runtime Manager process...");
-        // self.runtime_manager_process.kill()?;
-
-        // info!("TCP connection and process killed.");
-        // Ok(())
     }
 }

@@ -65,6 +65,44 @@ pub fn start(firmware_version: &str, device_id: i32) -> ProxyAttestationServerRe
     Ok(base64::encode(&serialized_attestation_init))
 }
 
+pub fn attestation_token_nocheck(body_string: String) -> ProxyAttestationServerResponder {
+    let received_bytes = base64::decode(&body_string)?;
+
+    let parsed = transport_protocol::parse_proxy_attestation_server_request(None, &received_bytes)?;
+    if !parsed.has_native_psa_attestation_token() {
+        println!("proxy-attestation-server::attestation::psa::attestation_token received data is incorrect.");
+        return Err(ProxyAttestationServerError::MissingFieldError(
+            "native_psa_attestation_token",
+        ));
+    }
+    let (token, csr, device_id) = transport_protocol::parse_native_psa_attestation_token(
+        parsed.get_native_psa_attestation_token(),
+    );
+
+    let mut measurement_bytes = vec![0u8; 32];
+
+    let cert = crate::attestation::convert_csr_to_certificate(&csr, &measurement_bytes)
+        .map_err(|err| {
+            println!("proxy-attestation-server::attestation::psa::attestation_token convert_csr_to_certificate failed:{:?}", err);
+            err
+        })?;
+
+    let root_cert_der = crate::attestation::get_ca_certificate()?;
+
+    let response_bytes = transport_protocol::serialize_cert_chain(&cert.to_der()?, &root_cert_der)?;
+
+    let response_b64 = base64::encode(&response_bytes);
+
+    // clean up the Attestation Context by removing this context
+    {
+        let mut ac_hash = ATTESTATION_CONTEXT.lock()?;
+        ac_hash.remove(&device_id);
+    }
+
+    Ok(response_b64)
+}
+
+
 pub fn attestation_token(body_string: String) -> ProxyAttestationServerResponder {
     let received_bytes = base64::decode(&body_string)?;
 

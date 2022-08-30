@@ -104,7 +104,13 @@ fn main() -> Result<()> {
         if finished {
             break;
         }
-        let received_buffer = receive_buffer(fd)?;
+        let received_buffer = match receive_buffer(fd) {
+            Ok(r) => r,
+            Err(err) => {
+                error!("runtime_manager_cca::main receive_buffer: {:?}", err);
+                break
+            }
+        };
         let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)?;
         let return_message = match received_message {
             RuntimeManagerRequest::Attestation(challenge, challenge_id) => {
@@ -166,12 +172,17 @@ fn main() -> Result<()> {
         };
         let return_buffer = bincode::serialize(&return_message)?;
         debug!(
-            "runtime_manager_cca::main calling send buffer with buffer_len:{:?}",
+            "runtime_manager_cca::main calling send buffer with buffer_len: {:?}",
             return_buffer.len()
         );
-        send_buffer(fd, &return_buffer)?;
+        match send_buffer(fd, &return_buffer) {
+            Ok(r) => (),
+            Err(err) => {
+                error!("runtime_manager_cca::main send_buffer: {:?}", err);
+                break
+            }
+        };
     }
-
 
     info!("Shutting down");
     nix::sys::reboot::reboot(nix::sys::reboot::RebootMode::RB_POWER_OFF)
@@ -226,6 +237,7 @@ fn attestation(challenge: &[u8], _challenge_id: i32) -> Result<RuntimeManagerRes
                     let hex = bytes_to_hex(&r.token[0..(r.token_length as usize)]);
                     info!("runtime_manager_cca::attestation token = {:x?}", hex);
                     let token = r.token[0..(r.token_length as usize)].to_vec();
+                    info!("runtime_manager_cca::attestation done");
                     Ok(RuntimeManagerResponse::AttestationData(token, csr))
                 }
                 Err(e) => {
@@ -264,6 +276,7 @@ fn attestation(challenge: &[u8], _challenge_id: i32) -> Result<RuntimeManagerRes
         af06b4df5a2da171de4a2e27d54a4fe145904857cbe5";
         let token_hex : String = token_hex.chars().filter(|c| !c.is_whitespace()).collect();
         let token = hex::decode(token_hex).ok().unwrap();
+        info!("runtime_manager_cca::attestation done");
         Ok(RuntimeManagerResponse::AttestationData(token, csr))
     }
 }

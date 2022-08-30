@@ -28,6 +28,21 @@ lazy_static! {
 }
 
 #[allow(unused)]
+async fn cca_router(
+    cca_request: web::Path<String>,
+    input_data: String,
+) -> ProxyAttestationServerResponder {
+    #[cfg(any(feature = "linux", feature = "cca", feature = "icecap"))]
+    if cca_request.into_inner().as_str() == "AttestationToken" {
+        psa::attestation_token_nocheck(input_data)
+    } else {
+        Err(ProxyAttestationServerError::UnsupportedRequestError)
+    }
+    #[cfg(not(any(feature = "linux", feature = "cca", feature = "icecap")))]
+    Err(ProxyAttestationServerError::UnimplementedRequestError)
+}
+
+#[allow(unused)]
 async fn psa_router(
     psa_request: web::Path<String>,
     input_data: String,
@@ -94,6 +109,7 @@ where
         App::new()
             .wrap(middleware::Logger::default())
             .route("/Start", web::post().to(attestation::start))
+            .route("/CCA/{cca_request}", web::post().to(cca_router))
             .route("/PSA/{psa_request}", web::post().to(psa_router))
             .route("/Nitro/{nitro_request}", web::post().to(nitro_router))
     })
