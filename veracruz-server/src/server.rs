@@ -12,6 +12,8 @@
 use crate::common::*;
 #[cfg(feature = "icecap")]
 use crate::platforms::icecap::VeracruzServerIceCap as VeracruzServerEnclave;
+#[cfg(feature = "icecap-cca")]
+use crate::platforms::icecap_cca::VeracruzServerIceCapCCA as VeracruzServerEnclave;
 #[cfg(feature = "linux")]
 use crate::platforms::linux::veracruz_server_linux::VeracruzServerLinux as VeracruzServerEnclave;
 #[cfg(feature = "nitro")]

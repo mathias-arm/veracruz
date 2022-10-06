@@ -11,6 +11,8 @@
 
 #[cfg(feature = "icecap")]
 use crate::platforms::icecap::IceCapError;
+#[cfg(feature = "icecap-cca")]
+use crate::platforms::icecap_cca::IceCapError;
 use err_derive::Error;
 #[cfg(feature = "nitro")]
 use nitro_enclave::NitroError;
