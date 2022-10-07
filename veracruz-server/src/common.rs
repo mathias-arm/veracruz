@@ -56,6 +56,9 @@ pub enum VeracruzServerError {
     #[cfg(feature = "nitro")]
     #[error(display = "VeracruzServer: Nitro Error:{:?}", _0)]
     NitroError(#[error(source)] NitroError),
+    #[cfg(feature = "icecap-cca")]
+    #[error(display = "VeracruzServer: IceCap CCA error: {:?}", _0)]
+    IceCapError(#[error(source)] IceCapError),
     #[cfg(feature = "icecap")]
     #[error(display = "VeracruzServer: IceCap error: {:?}", _0)]
     IceCapError(#[error(source)] IceCapError),
