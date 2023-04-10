@@ -2,19 +2,22 @@
 extern crate log;
 
 use core::{convert::TryFrom, mem::size_of};
+use std::fs;
+use std::os::unix::prelude::{RawFd, FromRawFd};
 
 use anyhow::{anyhow, Error, Result};
 use nix::mount::{mount, MsFlags}; // MntFlags
 use nix::sys::stat::Mode;
 use nix::unistd::{mkdir, read, close};
 
-use io_utils::raw_fd::{receive_buffer, send_buffer};
+use io_utils::fd::{receive_buffer, send_buffer};
 
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
 };
 
 use runtime_manager_enclave::managers::{self, RuntimeManagerError};
+use uuid::Uuid;
 
 #[cfg(feature = "vsock")]
 use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockAddr, SockFlag, SockType};
@@ -23,7 +26,6 @@ use nix::fcntl::{open, OFlag};
 
 use bincode;
 use serde::{Deserialize, Serialize};
-use std::fs;
 
 /// The CID for the VSOCK to listen on
 /// Currently set to all 1's so it will listen on all of them
@@ -64,15 +66,23 @@ fn main() -> Result<()> {
 
     if ATTESTATION_TEST {
         let challenge = [0u8; 64];
-        attestation(&challenge, 0);
+        attestation(&challenge, Uuid::nil());
         info!("Shutting down");
         return nix::sys::reboot::reboot(nix::sys::reboot::RebootMode::RB_POWER_OFF)
             .map(|_| {})
             .map_err(Error::from);
     }
 
+    let paths = fs::read_dir("/dev").unwrap();
+    for path in paths {
+        let p = path.unwrap().path().clone();
+        if p.display().to_string().ends_with("hvc0") {
+            info!("{}", p.display());
+        }
+    }
+
     #[cfg(feature = "vsock")]
-    let fd = {
+    let fd: RawFd = {
         info!("Using vsock");
         let socket_fd = socket(
             AddressFamily::Vsock,
@@ -91,7 +101,7 @@ fn main() -> Result<()> {
     };
 
     #[cfg(not(feature = "vsock"))]
-    let fd = {
+    let fd: RawFd = {
         info!("Using virtio-console");
         let f = open("/dev/hvc0", OFlag::empty(), Mode::empty())?;
         debug!("Opened /dev/hvc0");
@@ -104,7 +114,7 @@ fn main() -> Result<()> {
         if finished {
             break;
         }
-        let received_buffer = receive_buffer(fd)?;
+        let received_buffer = receive_buffer(unsafe { std::fs::File::from_raw_fd(fd) })?;
         let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)?;
         let return_message = match received_message {
             RuntimeManagerRequest::Attestation(challenge, challenge_id) => {
@@ -130,14 +140,6 @@ fn main() -> Result<()> {
                     Err(_) => RuntimeManagerResponse::Status(Status::Fail),
                 };
                 finished = true;
-                return_message
-            }
-            RuntimeManagerRequest::GetTlsDataNeeded(session_id) => {
-                debug!("runtime_manager_cca::main GetTlsDataNeeded");
-                let return_message = match managers::session_manager::get_data_needed(session_id) {
-                    Ok(needed) => RuntimeManagerResponse::TlsDataNeeded(needed),
-                    Err(_) => RuntimeManagerResponse::Status(Status::Fail),
-                };
                 return_message
             }
             RuntimeManagerRequest::SendTlsData(session_id, tls_data) => {
@@ -169,7 +171,7 @@ fn main() -> Result<()> {
             "runtime_manager_cca::main calling send buffer with buffer_len:{:?}",
             return_buffer.len()
         );
-        send_buffer(fd, &return_buffer)?;
+        send_buffer(unsafe { std::fs::File::from_raw_fd(fd) }, &return_buffer)?;
     }
 
 
@@ -195,7 +197,7 @@ fn bytes_to_hex(bytes : &[u8]) -> String {
 
 nix::ioctl_readwrite!(cca_attestation_request, b'A', 1, cca_ioctl_request);
 
-fn attestation(challenge: &[u8], _challenge_id: i32) -> Result<RuntimeManagerResponse> {
+fn attestation(challenge: &[u8], _challenge_id: Uuid) -> Result<RuntimeManagerResponse> {
     info!("runtime_manager_cca::attestation started");
     managers::session_manager::init_session_manager()?;
     // generate the csr
@@ -269,7 +271,7 @@ fn attestation(challenge: &[u8], _challenge_id: i32) -> Result<RuntimeManagerRes
 }
 
 /// Handler for the RuntimeManagerRequest::Initialize message
-fn initialize(policy_json: &str, cert_chain: &Vec<Vec<u8>>) -> Result<RuntimeManagerResponse> {
+fn initialize(policy_json: &str, cert_chain: &Vec<u8>) -> Result<RuntimeManagerResponse> {
     managers::session_manager::load_policy(policy_json)?;
     info!("runtime_manager_cca::initialize started");
     managers::session_manager::load_cert_chain(cert_chain)?;
