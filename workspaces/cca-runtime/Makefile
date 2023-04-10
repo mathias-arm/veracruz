@@ -59,7 +59,7 @@ runtime-manager-enclave:
 	rustup target add aarch64-unknown-linux-musl
 	$(COMPILERS) cargo build $(PROFILE_FLAG) $(V_FLAG) \
 		--target aarch64-unknown-linux-musl \
-		--features cca $(QEMU_FEATURE) --features vsock -p init
+		--features cca $(QEMU_FEATURE) -p init --features vsock 
 
 doc:
 	cargo doc

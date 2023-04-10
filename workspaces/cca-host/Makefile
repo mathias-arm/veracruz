@@ -50,11 +50,10 @@ CLIPPY_OPTIONS = --no-deps -A clippy::type_complexity -A clippy::module_inceptio
 all: build test-collateral
 
 build:
+	rustup target add aarch64-unknown-linux-gnu
 	$(COMPILERS) \
 		cargo build $(PROFILE_FLAG) $(V_FLAG) $(TARGET) \
-		-p proxy-attestation-server \
 		-p veracruz-client -p veracruz-server \
-		--features proxy-attestation-server/cca \
 		--features veracruz-client/cca \
 		--features veracruz-server/cca \
 		--features veracruz-server/vsock \
@@ -62,11 +61,9 @@ build:
 
 install:
 	# create full names
-	cp -f target/$(PROFILE_PATH)/proxy-attestation-server $(BIN_DIR)
 	cp -f target/$(PROFILE_PATH)/veracruz-client $(BIN_DIR)
 	cp -f target/$(PROFILE_PATH)/veracruz-server $(BIN_DIR)
 	# create short names
-	ln -sf $(BIN_DIR)/proxy-attestation-server $(BIN_DIR)/vc-pas
 	ln -sf $(BIN_DIR)/veracruz-server $(BIN_DIR)/vc-server
 	ln -sf $(BIN_DIR)/veracruz-client $(BIN_DIR)/vc-client
 
@@ -98,10 +95,9 @@ clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 	# workspace members and relevant dependencies
 	$(COMPILERS) \
 		cargo clippy $(PROFILE_FLAG) $(V_FLAG) \
-		-p proxy-attestation-server -p veracruz-client \
+		-p veracruz-client \
 		-p veracruz-server -p io-utils -p transport-protocol \
 		-p psa-attestation -p veracruz-utils  \
-		--features proxy-attestation-server/cca \
 		--features veracruz-client/cca \
 		--features veracruz-server/cca \
 		--features io-utils/cca \
