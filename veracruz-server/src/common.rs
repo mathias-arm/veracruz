@@ -35,7 +35,7 @@ pub enum VeracruzServerError {
     #[cfg(any(feature = "linux", feature = "nitro", feature = "cca"))]
     #[error(display = "VeracruzServer: BincodeError: {:?}", _0)]
     BincodeError(bincode::ErrorKind),
-    #[cfg(any(feature = "nitro", feature = "linux"))]
+    #[cfg(any(feature = "nitro", feature = "linux", feature = "cca"))]
     #[error(display = "VeracruzServer: Status: {:?}", _0)]
     Status(veracruz_utils::runtime_manager_message::Status),
     #[cfg(any(feature = "linux", feature = "nitro", feature = "cca"))]
@@ -94,7 +94,7 @@ impl From<anyhow::Error> for VeracruzServerError {
     }
 }
 
-#[cfg(feature = "nitro", feature = "cca")]
+#[cfg(any(feature = "nitro", feature = "cca"))]
 impl From<std::boxed::Box<bincode::ErrorKind>> for VeracruzServerError {
     fn from(error: std::boxed::Box<bincode::ErrorKind>) -> Self {
         VeracruzServerError::BincodeError(*error)
