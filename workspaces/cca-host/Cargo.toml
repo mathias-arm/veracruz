@@ -20,9 +20,8 @@ exclude = [
 ]
 members = [
   "crates/cca-veracruz-server",
-  "crates/proxy-attestation-server",
-  "crates/veracruz-client",
   "crates/tests",
+  "crates/veracruz-client",
 ]
 resolver = "2"
 
