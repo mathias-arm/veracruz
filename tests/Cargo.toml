@@ -17,7 +17,6 @@ default = []
 debug = ["veracruz-server/debug"]
 cca = [
   "policy-utils/std",
-  "proxy-attestation-server/cca",
   "veracruz-server/cca",
   "veracruz-utils/linux",
 ]

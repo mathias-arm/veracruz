@@ -16,9 +16,14 @@ include common.mk
 .PHONY: all clean linux linux-install linux-clippy \
 	linux-clean nitro nitro-clippy nitro-clean shared shared-install shared-clean
 
-all: shared linux nitro
+all: shared linux nitro cca
 
 clean: shared-clean linux-clean nitro-clean
+
+
+cca: shared
+	$(MAKE) -C cca-runtime
+	$(MAKE) -C cca-host
 
 linux: shared
 	$(MAKE) -C linux-runtime

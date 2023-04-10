@@ -20,6 +20,7 @@ cca = [
   "signal-hook",
   "tempfile",
   "veracruz-utils/linux",
+  "raw-fd",
 ]
 vsock = []
 # a feature to enable CLI-only dependencies
@@ -65,6 +66,7 @@ policy-utils = { path = "../policy-utils" }
 proxy-attestation-client = { git = "https://github.com/veracruz-project/proxy-attestation-client", tag = "v0.2" }
 psa-attestation = { path = "../psa-attestation", optional = true }
 rand = "0.8.3"
+raw-fd = { git = "https://github.com/veracruz-project/nitro-enclave", tag = "v0.1", optional = true }
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "multipart", "rustls-tls"] }
 serde = { version = "1.0.115", default-features = false, features = ["derive"] }
 serde_json = "1.0"
