@@ -1410,7 +1410,6 @@ name = "platform-services"
 version = "0.3.0"
 dependencies = [
  "aws-nitro-enclaves-nsm-api",
- "cfg-if",
  "getrandom",
  "nix",
  "nsm-lib",
