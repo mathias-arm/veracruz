@@ -28,9 +28,6 @@ all: cca
 
 cca: runtime-manager-enclave initrd.cpio
 
-COMPILERS = CC_aarch64_unknown_linux_musl=/work/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc \
-	LD_aarch64_unknown_linux_musl=/work/aarch64-linux-musl-cross/bin/aarch64-linux-musl-ld
-
 initrd.cpio: runtime-manager-enclave
 	rm -rf initrd initrd.cpio
 	mkdir initrd
@@ -56,9 +53,7 @@ run: cca Image.guest
 		-kernel Image.guest -initrd initrd.cpio
 
 runtime-manager-enclave:
-	rustup target add aarch64-unknown-linux-musl
-	$(COMPILERS) cargo build $(PROFILE_FLAG) $(V_FLAG) \
-		--target aarch64-unknown-linux-musl \
+	cargo build $(PROFILE_FLAG) $(V_FLAG) \
 		--features cca $(QEMU_FEATURE) -p init --features vsock 
 
 doc:
