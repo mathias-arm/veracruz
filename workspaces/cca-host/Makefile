@@ -50,7 +50,6 @@ CLIPPY_OPTIONS = --no-deps -A clippy::type_complexity -A clippy::module_inceptio
 all: build test-collateral
 
 build:
-	rustup target add aarch64-unknown-linux-gnu
 	$(COMPILERS) \
 		cargo build $(PROFILE_FLAG) $(V_FLAG) $(TARGET) \
 		-p veracruz-client -p veracruz-server \
