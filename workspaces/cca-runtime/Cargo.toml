@@ -20,7 +20,6 @@ exclude = [
   "crates/third-party/wasmi",
 ]
 members = [
-  # "crates/runtime-manager",
   "src/init",
 ]
 resolver = "2"
