@@ -26,16 +26,16 @@ MEASUREMENT_FILE = $(RUNTIME_ENCLAVE_BINARY_PATH)
 MEASUREMENT_PARAMETER = --css-file $(MEASUREMENT_FILE)
 include $(WORKSPACE_DIR)/shared.mk
 
-QEMU ?= 0
-ifeq ($(QEMU),1)
+SIMULATION ?= 0
+ifeq ($(SIMULATION),1)
 	COMPILERS = CC_x86_64_unknown_linux_gnu=gcc CC_aarch64_unknown_linux_gnu=gcc
-	TARGET =
-	QEMU_FEATURE = --features veracruz-server/icecap-qemu
+	TARGET =--target $(shell uname -m)-unknown-linux-gnu
+	SIMULATION_FEATURE = --features veracruz-server/simulation
 else
 	COMPILERS = CC_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc \
 		LD_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc
 	TARGET = --target aarch64-unknown-linux-gnu
-	QEMU_FEATURE = --features veracruz-server/icecap-lkvm
+	SIMULATION_FEATURE =
 endif
 
 TEST_PARAMETERS = VERACRUZ_POLICY_DIR=$(OUT_DIR) \
@@ -55,8 +55,7 @@ build:
 		-p veracruz-client -p veracruz-server \
 		--features veracruz-client/cca \
 		--features veracruz-server/cca \
-		--features veracruz-server/vsock \
-		--features cli $(QEMU_FEATURE)
+		--features cli $(SIMULATION_FEATURE)
 
 install:
 	# create full names
@@ -72,7 +71,7 @@ CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
 	$(COMPILERS) \
 	$(TEST_PARAMETERS) \
 		cargo test $(PROFILE_FLAG) $(TARGET) \
-			--features cca --features veracruz-server/vsock $(QEMU_FEATURE)
+			--features cca $(SIMULATION_FEATURE)
 
 test-server: test-dependencies
 	$(CARGO_TEST) -p tests --no-run -- --nocapture
@@ -88,7 +87,7 @@ veracruz-test: test-dependencies
 		$(CARGO_TEST) -p tests --test integration_test -- --test-threads=1
 
 $(RUNTIME_ENCLAVE_BINARY_PATH):
-	$(MAKE) -C ../cca-runtime QEMU=$(QEMU) cca
+	$(MAKE) -C ../cca-runtime SIMULATION=$(SIMULATION) cca
 
 clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 	# workspace members and relevant dependencies

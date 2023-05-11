@@ -14,7 +14,7 @@ use err_derive::Error;
 use io_utils::{
     tcp::{receive_message, send_message},
 };
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use nix::sys::signal;
 use policy_utils::policy::Policy;
 use rand::Rng;
@@ -67,38 +67,39 @@ pub enum CCAError {
 ////////////////////////////////////////////////////////////////////////////
 
 const VERACRUZ_CCA_QEMU_BIN_DEFAULT: &[&str] = &["qemu-system-aarch64"];
+#[cfg(feature = "simulation")]
 const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
-    "-machine",
-    "virt",
-    "-cpu",
-    "cortex-a57",
-    "-smp",
-    "4",
-    "-m",
-    "3072",
-    "-serial",
-    "mon:stdio",
-    "-nographic",
-    "-kernel",
-    "{kernel_path}",
-    "-initrd",
-    "{initrd_path}",
-    "-netdev",
-    "user,id=netdev0",
-    "-semihosting-config",
-    "enable=on,target=native",
+    "-machine", "virt", "-cpu", "max", "-smp", "1", "-m", "1024",
+    "-M", "gic-version=3", "-nic", "none", "-nodefaults", "-nographic",
+    "-kernel", "{kernel_path}", "-initrd", "{initrd_path}",
+    "-global", "virtio-mmio.force-legacy=false",
+    "-trace", "*load*",
+    "-serial", "chardev:char0", "-chardev", "stdio,id=char0", "-append", "console=ttyAMA0",
 ];
+
+#[cfg(not(feature = "simulation"))]
+const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
+    "-machine", "virt", "-cpu", "host", "-enable-kvm", "-smp", "1", "-m", "1024",
+    "-M", "gic-version=3", "-nic", "none", "-nodefaults", "-nographic",
+    "-kernel", "{kernel_path}", "-initrd", "{initrd_path}",
+    "-M", "confidential-guest-support=rme0", "-overcommit", "mem-lock=on",
+    "-object", "rme-guest,id=rme0,measurement-algo=sha256",
+    "-global", "virtio-mmio.force-legacy=false",
+    "-trace", "*load*", "-serial", "chardev:char0",
+    "-device", "virtio-serial,id=virtio-serial0",
+    "-chardev", "stdio,id=char0,mux=on",
+    "-device", "virtconsole,chardev=char0",
+];
+
 const VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT: &[&str] = &[
-    "-chardev",
-    "socket,path={console0_path},server=on,wait=off,id=charconsole0",
-    "-device",
-    "virtio-serial-device",
-    "-device",
-    "virtconsole,chardev=charconsole0,id=console0",
+    "-chardev", "socket,path={console0_path},server=on,wait=off,id=charconsole0",
+    "-device", "virtio-serial-device",
+    "-device", "virtconsole,chardev=charconsole0,id=console0",
 ];
 const VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT: &[&str] = &[
     "-device", "vhost-vsock-pci,guest-cid={cid}",
 ];
+
 const VERACRUZ_CCA_KERNEL_PATH_DEFAULT: &str = "../cca-runtime/Image.guest";
 const VERACRUZ_CCA_INITRD_PATH_DEFAULT: &str = "../cca-runtime/initrd.cpio";
 
@@ -147,13 +148,11 @@ impl CCAEnclave {
             VERACRUZ_CCA_QEMU_FLAGS_DEFAULT,
         )?;
 
-        #[cfg(feature = "vsock")]
         let qemu_vsock_flags = env_flags(
             "VERACRUZ_CCA_QEMU_VSOCK_FLAGS",
             VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT,
         )?;
 
-        #[cfg(not(feature = "vsock"))]
         let qemu_console_flags = env_flags(
             "VERACRUZ_CCA_QEMU_CONSOLE_FLAGS",
             VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT,
@@ -178,16 +177,18 @@ impl CCAEnclave {
             .map(|s| s.replace("{initrd_path}", &initrd_path))
             .collect();
 
-        #[cfg(feature = "vsock")]
-        let com_flags : Vec<String> = qemu_vsock_flags
-            .iter()
-            .map(|s| s.replace("{cid}", "3"))
-            .collect();
-        #[cfg(not(feature = "vsock"))]
-        let com_flags : Vec<String> = qemu_console_flags
-            .iter()
-            .map(|s| s.replace("{console0_path}", channel_path.to_str().unwrap()))
-            .collect();
+
+        let com_flags : Vec<String> = if cfg!(not(feature = "simulation")) {
+            qemu_vsock_flags
+                .iter()
+                .map(|s| s.replace("{cid}", "3"))
+                .collect()
+        } else {
+            qemu_console_flags
+                .iter()
+                .map(|s| s.replace("{console0_path}", channel_path.to_str().unwrap()))
+                .collect()
+        };
 
         println!("{:?} {:?} {:?}", qemu_bin, qemu_flags, com_flags);
 
@@ -239,21 +240,7 @@ impl CCAEnclave {
         thread::sleep(Duration::from_millis(5000));
 
         let channel = loop {
-            #[cfg(not(feature = "vsock"))]
-            let (addr, socket) = {
-                info!("Connecting to UNIX socket '{}'", channel_path.to_str().unwrap());
-                let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
-                let socket = nix::sys::socket::socket(
-                    nix::sys::socket::AddressFamily::Unix,
-                    nix::sys::socket::SockType::Stream,
-                    nix::sys::socket::SockFlag::empty(),
-                    None
-                )?;
-                (addr, socket)
-            };
-
-            #[cfg(feature = "vsock")]
-            let (addr, socket) = {
+            let (addr, socket) = if cfg!(not(feature = "simulation")) {
                 info!("Connecting to vsock cid: {} port: {}", 3, VERACRUZ_PORT);
                 let addr = nix::sys::socket::SockAddr::new_vsock(3, VERACRUZ_PORT);
                 let socket = nix::sys::socket::socket(
@@ -264,6 +251,16 @@ impl CCAEnclave {
                 )?;
                 nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReuseAddr, &true)?;
                 nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReusePort, &true)?;
+                (addr, socket)
+            } else {
+                info!("Connecting to UNIX socket '{}'", channel_path.to_str().unwrap());
+                let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
+                let socket = nix::sys::socket::socket(
+                    nix::sys::socket::AddressFamily::Unix,
+                    nix::sys::socket::SockType::Stream,
+                    nix::sys::socket::SockFlag::empty(),
+                    None
+                )?;
                 (addr, socket)
             };
 
