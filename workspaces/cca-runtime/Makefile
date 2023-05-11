@@ -14,12 +14,12 @@
 default: all
 
 WORKSPACE_DIR = $(abspath ..)
-QEMU ?= 0
+SIMULATION ?= 0
 
-ifeq ($(QEMU), 0)
-    QEMU_FEATURE =
+ifeq ($(SIMULATION), 0)
+    SIMULATION_FEATURE =
 else
-    QEMU_FEATURE = --features qemu
+    SIMULATION_FEATURE = --features simulation
 endif
 
 include $(WORKSPACE_DIR)/common.mk
@@ -44,17 +44,14 @@ Image.guest:
 
 run: cca Image.guest
 	qemu-system-aarch64 -machine virt -cpu cortex-a57 -smp 4 -m 3072 \
-		-device vhost-vsock-pci,guest-cid=3 \
-		-netdev user,id=netdev0 \
-		-serial mon:stdio -nographic \
+		-serial mon:stdio -nographic -nic none \
 		-semihosting-config enable=on,target=native \
 		-chardev socket,path=./socket,server=on,wait=off,id=charconsole0 \
-    	-device virtio-serial-device -device virtconsole,chardev=charconsole0,id=console0 \
+		-device virtio-serial-device -device virtconsole,chardev=charconsole0,id=console0 \
 		-kernel Image.guest -initrd initrd.cpio
 
 runtime-manager-enclave:
-	cargo build $(PROFILE_FLAG) $(V_FLAG) \
-		--features cca $(QEMU_FEATURE) -p init --features vsock 
+	cargo build $(PROFILE_FLAG) $(V_FLAG) $(SIMULATION_FEATURE)
 
 doc:
 	cargo doc
