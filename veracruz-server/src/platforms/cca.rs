@@ -12,16 +12,19 @@
 use crate::common::{VeracruzServer, VeracruzServerError};
 use err_derive::Error;
 use io_utils::{
-    tcp::{receive_message, send_message},
+    nix::{receive_message, send_message},
 };
 use log::{debug, error, info, warn};
 use nix::sys::signal;
+use nix::unistd::read;
 use policy_utils::policy::Policy;
 use rand::Rng;
 use signal_hook::{
     consts::SIGINT,
     iterator::{Handle, Signals},
 };
+
+
 use std::{
     convert::TryFrom,
     env,
@@ -164,7 +167,7 @@ impl CCAEnclave {
         // create a temporary socket for communication
         let channel_path = tempdir.path().join("console0");
         // let channel_path = std::path::PathBuf::from("/tmp/console0");
-        println!("vc-server: using unix socket: {:?}", channel_path);
+        info!("vc-server: using unix socket: {:?}", channel_path);
 
         let kernel_path = env::var("VERACRUZ_CCA_KERNEL_PATH")
             .unwrap_or_else(|_| VERACRUZ_CCA_KERNEL_PATH_DEFAULT.to_string());
@@ -177,8 +180,10 @@ impl CCAEnclave {
             .map(|s| s.replace("{initrd_path}", &initrd_path))
             .collect();
 
+        let use_vsock = cfg!(not(feature = "simulation"));
+        let use_vsock = true;
 
-        let com_flags : Vec<String> = if cfg!(not(feature = "simulation")) {
+        let com_flags : Vec<String> = if use_vsock {
             qemu_vsock_flags
                 .iter()
                 .map(|s| s.replace("{cid}", "3"))
@@ -190,7 +195,7 @@ impl CCAEnclave {
                 .collect()
         };
 
-        println!("{:?} {:?} {:?}", qemu_bin, qemu_flags, com_flags);
+        info!("{:?} {:?} {:?}", qemu_bin, qemu_flags, com_flags);
 
         // startup qemu
         let child = Arc::new(Mutex::new(
@@ -211,7 +216,7 @@ impl CCAEnclave {
             let mut child_stdout = child.lock().unwrap().stdout.take().unwrap();
             move || {
                 let err = io::copy(&mut child_stdout, &mut io::stdout());
-                eprintln!("vc-server: qemu: stdout closed: {:?}", err);
+                error!("vc-server: qemu: stdout closed: {:?}", err);
             }
         });
 
@@ -219,7 +224,7 @@ impl CCAEnclave {
             let mut child_stderr = child.lock().unwrap().stderr.take().unwrap();
             move || {
                 let err = io::copy(&mut child_stderr, &mut io::stderr());
-                eprintln!("vc-server: qemu: stderr closed: {:?}", err);
+                error!("vc-server: qemu: stderr closed: {:?}", err);
             }
         });
 
@@ -230,7 +235,7 @@ impl CCAEnclave {
             let child = child.clone();
             move || {
                 for sig in signals.forever() {
-                    eprintln!("vc-server: qemu: Killed by signal: {:?}", sig);
+                    error!("vc-server: qemu: Killed by signal: {:?}", sig);
                     child.lock().unwrap().kill().unwrap();
                     signal_hook::low_level::emulate_default_handler(SIGINT).unwrap();
                 }
@@ -240,7 +245,7 @@ impl CCAEnclave {
         thread::sleep(Duration::from_millis(5000));
 
         let channel = loop {
-            let (addr, socket) = if cfg!(not(feature = "simulation")) {
+            let (addr, socket) = if use_vsock {
                 info!("Connecting to vsock cid: {} port: {}", 3, VERACRUZ_PORT);
                 let addr = nix::sys::socket::SockAddr::new_vsock(3, VERACRUZ_PORT);
                 let socket = nix::sys::socket::socket(
@@ -261,6 +266,7 @@ impl CCAEnclave {
                     nix::sys::socket::SockFlag::empty(),
                     None
                 )?;
+
                 (addr, socket)
             };
 
@@ -325,7 +331,7 @@ impl CCAEnclave {
 
     // NOTE close can report errors, but drop can still happen in weird cases
     fn shutdown(&mut self) -> Result<(), VeracruzServerError> {
-        println!("vc-server: shutting down");
+        info!("vc-server: shutting down");
         self.signal_handle.close();
         self.child.lock().unwrap().kill()?;
         Ok(())
@@ -435,12 +441,11 @@ impl VeracruzServer for VeracruzServerCCA {
         // which will use fields from the JSON policy file.
         let policy = Policy::from_json(policy_json)?;
 
-
         let (challenge_id, challenge) = proxy_attestation_client::start_proxy_attestation(
             policy.proxy_attestation_server_url(),
         )
         .map_err(|e| {
-            eprintln!(
+            error!(
                 "Failed to start proxy attestation process.  Error produced: {}.",
                 e
             );
