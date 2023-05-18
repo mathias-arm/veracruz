@@ -2,15 +2,18 @@ mod cca;
 mod init;
 
 use anyhow::{anyhow, Error, Result};
-use io_utils::fd::{receive_buffer, send_buffer};
+use io_utils::nix::{receive_buffer, send_buffer};
 use log::{debug, error, info};
 use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockAddr, SockFlag, SockType};
 use runtime_manager_enclave::managers::{self, RuntimeManagerError};
-use std::os::unix::prelude::{FromRawFd, RawFd};
+use std::os::unix::prelude::FromRawFd;
 use uuid::Uuid;
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
 };
+use std::io::{Read, Write};
+use nix::unistd::{read, write};
+use std::os::unix::prelude::RawFd;
 
 /// The CID for the VSOCK to listen on
 /// Currently set to all 1's so it will listen on all of them
@@ -25,6 +28,12 @@ const ATTESTATION_TEST: bool = false;
 
 fn main() -> Result<()> {
     crate::init::init("debug", true)?;
+
+    std::panic::set_hook(Box::new(|info| {
+        error!("{}", info);
+        log::logger().flush();
+        crate::init::reboot().map_err(Error::from);
+    }));
 
     if ATTESTATION_TEST {
         let challenge = [0u8; 64];
@@ -51,7 +60,7 @@ fn main() -> Result<()> {
         f
     } else {
         info!("Using virtio-console");
-        let f = nix::fcntl::open("/dev/hvc0", nix::fcntl::OFlag::empty(),
+        let f = nix::fcntl::open("/dev/hvc0", nix::fcntl::OFlag::O_RDWR,
             nix::sys::stat::Mode::empty())?;
         debug!("Opened /dev/hvc0");
         f
@@ -63,7 +72,7 @@ fn main() -> Result<()> {
         if finished {
             break;
         }
-        let received_buffer = receive_buffer(unsafe { std::fs::File::from_raw_fd(fd) })?;
+        let received_buffer = receive_buffer(fd)?;
         let received_message: RuntimeManagerRequest = bincode::deserialize(&received_buffer)?;
         let return_message = match received_message {
             RuntimeManagerRequest::Attestation(challenge, challenge_id) => {
@@ -119,7 +128,7 @@ fn main() -> Result<()> {
             "runtime_manager_cca::main calling send buffer with buffer_len:{:?}",
             return_buffer.len()
         );
-        send_buffer(unsafe { std::fs::File::from_raw_fd(fd) }, &return_buffer)?;
+        send_buffer(fd, &return_buffer)?;
     }
 
     info!("Shutting down");
