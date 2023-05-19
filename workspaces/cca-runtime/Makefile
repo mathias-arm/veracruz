@@ -58,13 +58,8 @@ doc:
 
 clippy:
 	cargo clippy $(PROFILE_FLAG) $(V_FLAG) \
-		-p runtime_manager_enclave -p execution-engine \
-		-p session-manager -p policy-utils -p platform-services \
-		--features runtime_manager_enclave/cca \
-		--features execution-engine/std \
-		--features session-manager/std \
-		--features policy-utils/std \
-		--features platform-services/std \
+		-p cca-runtime -p runtime-manager -p execution-engine \
+		-p session-manager -p policy-utils -p platform-services
 		-- --no-deps
 
 fmt:
