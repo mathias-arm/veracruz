@@ -15,10 +15,10 @@
 
 /// IO-related error type.
 pub mod error;
-#[cfg(any(feature = "nitro", feature = "linux", feature = "cca"))]
+#[cfg(any(feature = "nitro", feature = "linux"))]
 /// FD-related material.
 pub mod fd;
-#[cfg(any(feature = "nitro", feature = "linux", feature = "cca"))]
+#[cfg(any(feature = "cca"))]
 /// FD-related material.
 pub mod nix;
 #[cfg(feature = "linux")]

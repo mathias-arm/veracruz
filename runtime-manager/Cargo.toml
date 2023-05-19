@@ -8,7 +8,18 @@ resolver = "2"
 
 [features]
 default = []
-cca = []
+cca = [
+  "bincode",
+  "clap",
+  "env_logger",
+  "execution-engine/std",
+  "io-utils/cca",
+  "nix",
+  "policy-utils/std",
+  "psa-attestation/linux",
+  "session-manager/std",
+  "veracruz-utils/linux",
+]
 linux = [
   "bincode",
   "execution-engine/std",
