@@ -197,6 +197,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "cca-runtime"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "env_logger 0.9.3",
+ "hex",
+ "io-utils",
+ "libc",
+ "log",
+ "nix",
+ "runtime-manager",
+ "serde",
+ "serde_json",
+ "uuid",
+ "veracruz-utils",
+]
+
+[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +713,7 @@ dependencies = [
  "lazy_static",
  "log",
  "mbedtls",
+ "nix",
  "num",
  "num-derive",
  "num-traits",
@@ -915,25 +935,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "init"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "bincode",
- "env_logger 0.9.3",
- "hex",
- "io-utils",
- "libc",
- "log",
- "nix",
- "runtime_manager_enclave",
- "serde",
- "serde_json",
- "uuid",
- "veracruz-utils",
-]
-
-[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -986,7 +987,6 @@ name = "io-utils"
 version = "0.3.0"
 dependencies = [
  "anyhow",
- "base64",
  "bincode",
  "byteorder",
  "err-derive",
@@ -1768,7 +1768,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "runtime_manager_enclave"
+name = "runtime-manager"
 version = "0.3.0"
 dependencies = [
  "anyhow",
