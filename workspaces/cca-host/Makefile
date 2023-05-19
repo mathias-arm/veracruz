@@ -28,21 +28,15 @@ include $(WORKSPACE_DIR)/shared.mk
 
 SIMULATION ?= 0
 ifeq ($(SIMULATION),1)
-	COMPILERS = CC_x86_64_unknown_linux_gnu=gcc CC_aarch64_unknown_linux_gnu=gcc
 	TARGET =--target $(shell uname -m)-unknown-linux-gnu
 	SIMULATION_FEATURE = --features veracruz-server/simulation
-else
-	COMPILERS = CC_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc \
-		LD_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-gcc
-	TARGET = --target aarch64-unknown-linux-gnu
-	SIMULATION_FEATURE =
 endif
 
 TEST_PARAMETERS = VERACRUZ_POLICY_DIR=$(OUT_DIR) \
 	VERACRUZ_TRUST_DIR=$(OUT_DIR) \
 	VERACRUZ_PROGRAM_DIR=$(OUT_DIR) \
 	VERACRUZ_DATA_DIR=$(OUT_DIR) \
-	VERACRUZ_CCA_KERNEL_PATH=$(WORKSPACE_DIR)/cca-runtime/Image.guest \
+	VERACRUZ_CCA_KERNEL_PATH=$(WORKSPACE_DIR)/cca-runtime/Image \
 	VERACRUZ_CCA_INITRD_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH)
 
 CLIPPY_OPTIONS = --no-deps -A clippy::type_complexity -A clippy::module_inception -D warnings
@@ -50,12 +44,7 @@ CLIPPY_OPTIONS = --no-deps -A clippy::type_complexity -A clippy::module_inceptio
 all: build test-collateral
 
 build:
-	$(COMPILERS) \
-		cargo build $(PROFILE_FLAG) $(V_FLAG) $(TARGET) \
-		-p veracruz-client -p veracruz-server \
-		--features veracruz-client/cca \
-		--features veracruz-server/cca \
-		--features cli $(SIMULATION_FEATURE)
+	cargo build $(PROFILE_FLAG) $(V_FLAG) $(TARGET) $(SIMULATION_FEATURE)
 
 install:
 	# create full names
@@ -68,10 +57,7 @@ install:
 test-dependencies: test-collateral $(RUNTIME_ENCLAVE_BINARY_PATH)
 
 CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
-	$(COMPILERS) \
-	$(TEST_PARAMETERS) \
-		cargo test $(PROFILE_FLAG) $(TARGET) \
-			--features cca $(SIMULATION_FEATURE)
+	$(TEST_PARAMETERS) cargo test $(PROFILE_FLAG) $(TARGET) $(SIMULATION_FEATURE)
 
 test-server: test-dependencies
 	$(CARGO_TEST) -p tests --no-run -- --nocapture
@@ -96,18 +82,11 @@ clippy: $(RUNTIME_ENCLAVE_BINARY_PATH)
 		-p veracruz-client \
 		-p veracruz-server -p io-utils -p transport-protocol \
 		-p psa-attestation -p veracruz-utils  \
-		--features veracruz-client/cca \
-		--features veracruz-server/cca \
-		--features io-utils/cca \
-		--features psa-attestation/cca \
-		--features veracruz-utils/cca \
 		-- $(CLIPPY_OPTIONS)
 	# workspace testing crates
 	$(COMPILERS) $(TEST_PARAMETERS) \
 		cargo clippy --tests \
 		$(PROFILE_FLAG) -p tests \
-		--features veracruz-test/cca \
-		--features veracruz-server-test/cca \
 		-- $(CLIPPY_OPTIONS)
 
 doc:

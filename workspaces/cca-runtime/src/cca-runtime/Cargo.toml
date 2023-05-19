@@ -1,8 +1,13 @@
 [package]
 authors = ["The Veracruz Development Team"]
-name = "init"
+name = "cca-runtime"
 version = "0.3.0"
 edition = "2018"
+resolver = "2"
+
+[[bin]]
+name = "init"
+path = "src/main.rs"
 
 [features]
 simulation = []
@@ -12,18 +17,12 @@ anyhow = "1.0"
 bincode = { version = "1.2.1", default-features = false }
 env_logger = "0.9.0"
 hex = "0.4"
-io-utils = { path = "../../../../io-utils", features = [ "linux", "cca" ] }
+io-utils = { path = "../../crates/io-utils", features = [ "cca" ] }
 libc = "0.2.124"
 log = "0.4.13"
 nix = "0.20.2"
-runtime_manager_enclave = { path = "../../../../runtime-manager", features = ["linux", "cca"] }
+runtime-manager = { path = "../../crates/runtime-manager", default-features = false, features = [ "cca" ] }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = "1.0"
 uuid = { version = "1.1.2", features = ["serde"] }
-veracruz-utils = { path = "../../../../veracruz-utils", features = ["std"] }
-
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 3
-strip = true
+veracruz-utils = { path = "../../crates/veracruz-utils", features = ["std"] }

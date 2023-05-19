@@ -4,11 +4,12 @@ description = "Common IO-related code used by multiple Veracruz components."
 edition = "2018"
 name = "io-utils"
 version = "0.3.0"
+resolver = "2"
 
 [features]
 linux = ["bincode", "byteorder", "base64/std"]
 nitro = ["serde_json/std", "base64/std", "nix", "byteorder"]
-cca = ["nix"]
+cca = ["bincode", "byteorder", "nix"]
 
 [dependencies]
 anyhow = "1"
