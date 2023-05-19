@@ -15,12 +15,15 @@ cargo-features = ["resolver"]
 [workspace]
 exclude = [
   "crates/icecap/sysroot/libc",
+  "crates/io-utils",
+  "crates/runtime-manager",
   "crates/third-party/rust-mbedtls",
   "crates/third-party/rust-psa-crypto",
   "crates/third-party/wasmi",
+  "crates/veracruz-utils",
 ]
 members = [
-  "src/init",
+  "src/cca-runtime",
 ]
 resolver = "2"
 

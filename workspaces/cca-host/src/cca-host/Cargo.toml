@@ -1,0 +1,11 @@
+[package]
+authors = ["The Veracruz Development Team"]
+description = "A dummy package"
+edition = "2018"
+name = "cca-host"
+version = "0.3.0"
+
+[dependencies]
+tests = { path = "../../crates/tests", features = [ "cca" ] }
+veracruz-client = { path = "../../crates/veracruz-client", features = [ "cca", "cli" ] }
+veracruz-server = { path = "../../crates/veracruz-server", features = [ "cca", "cli" ] }
