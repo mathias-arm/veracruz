@@ -22,6 +22,7 @@ members = [
   "crates/veracruz-client",
   "crates/veracruz-server",
   "crates/tests",
+  "src/cca-host"
 ]
 resolver = "2"
 

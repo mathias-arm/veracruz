@@ -5,7 +5,7 @@ use anyhow::{anyhow, Error, Result};
 use io_utils::nix::{receive_buffer, send_buffer};
 use log::{debug, error, info};
 use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockAddr, SockFlag, SockType};
-use runtime_manager_enclave::managers::{self, RuntimeManagerError};
+use runtime_manager::managers::{self, RuntimeManagerError};
 use std::os::unix::prelude::FromRawFd;
 use uuid::Uuid;
 use veracruz_utils::runtime_manager_message::{
