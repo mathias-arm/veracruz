@@ -1158,13 +1158,6 @@ checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
 [[package]]
 name = "platform-services"
 version = "0.3.0"
-dependencies = [
- "aws-nitro-enclaves-nsm-api",
- "cfg-if",
- "getrandom",
- "nix",
- "nsm-lib",
-]
 
 [[package]]
 name = "policy-utils"
