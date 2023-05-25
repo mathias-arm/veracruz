@@ -44,14 +44,14 @@ pub fn read_exact(fd: RawFd, mut buf: &mut [u8]) -> nix::Result<(), > {
                 let tmp = buf;
                 buf = &mut tmp[n..];
             }
-            Err(nix::Error::Sys(nix::errno::Errno::EINTR)) => {}
+            Err(nix::errno::Errno::EINTR) => {}
             Err(e) => {
                 return Err(e)
             },
         }
     }
     if !buf.is_empty() {
-        Err(nix::Error::Sys(nix::errno::Errno::ENODATA))
+        Err(nix::errno::Errno::ENODATA)
     } else {
         Ok(())
     }
