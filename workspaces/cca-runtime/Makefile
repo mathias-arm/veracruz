@@ -26,9 +26,9 @@ include $(WORKSPACE_DIR)/common.mk
 
 all: cca
 
-cca: runtime-manager-enclave initrd.cpio
+cca: cca-runtime-manager initrd.cpio
 
-initrd.cpio: runtime-manager-enclave
+initrd.cpio: cca-runtime-manager
 	rm -rf initrd initrd.cpio
 	mkdir initrd
 	cp target/aarch64-unknown-linux-musl/$(PROFILE_PATH)/init initrd/init
@@ -50,7 +50,7 @@ run: cca Image.guest
 		-device virtio-serial-device -device virtconsole,chardev=charconsole0,id=console0 \
 		-kernel Image.guest -initrd initrd.cpio
 
-runtime-manager-enclave:
+cca-runtime-manager:
 	cargo build $(PROFILE_FLAG) $(V_FLAG) $(SIMULATION_FEATURE)
 
 doc:
@@ -58,7 +58,7 @@ doc:
 
 clippy:
 	cargo clippy $(PROFILE_FLAG) $(V_FLAG) \
-		-p cca-runtime -p runtime-manager -p execution-engine \
+		-p cca-runtime-manager -p runtime-manager -p execution-engine \
 		-p session-manager -p policy-utils -p platform-services
 		-- --no-deps
 

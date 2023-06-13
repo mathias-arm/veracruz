@@ -1,6 +1,6 @@
 [package]
 authors = ["The Veracruz Development Team"]
-name = "cca-runtime"
+name = "cca-runtime-manager"
 version = "0.3.0"
 edition = "2018"
 resolver = "2"
