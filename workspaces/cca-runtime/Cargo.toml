@@ -23,7 +23,7 @@ exclude = [
   "crates/veracruz-utils",
 ]
 members = [
-  "src/cca-runtime",
+  "crates/cca-runtime-manager",
 ]
 resolver = "2"
 
