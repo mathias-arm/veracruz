@@ -3,7 +3,6 @@ authors = ["The Veracruz Development Team"]
 name = "cca-runtime-manager"
 version = "0.3.0"
 edition = "2018"
-resolver = "2"
 
 [[bin]]
 name = "init"
@@ -18,7 +17,7 @@ bincode = { version = "1.2.1", default-features = false }
 env_logger = "0.9.0"
 hex = "0.4"
 io-utils = { path = "../../crates/io-utils", features = [ "cca" ] }
-libc = "0.2.124"
+libc = "0.2.144"
 log = "0.4.13"
 nix = "0.20.2"
 runtime-manager = { path = "../../crates/runtime-manager", default-features = false, features = [ "cca" ] }

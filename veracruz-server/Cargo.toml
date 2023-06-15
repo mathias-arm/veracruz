@@ -13,7 +13,6 @@ path = "src/lib.rs"
 cca = [
   "data-encoding",
   "io-utils/cca",
-  "io-utils/host",
   "io-utils/linux",
   "nix",
   "policy-utils/std",
