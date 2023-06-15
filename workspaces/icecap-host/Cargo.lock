@@ -91,7 +91,7 @@ checksum = "17e83ef53714474149215e48438d2cf8f96fb76ae5a00f21f16051fab79c0627"
 dependencies = [
  "libc",
  "log",
- "nix",
+ "nix 0.20.2",
  "serde",
  "serde_bytes",
  "serde_cbor",
@@ -721,7 +721,7 @@ dependencies = [
  "byteorder",
  "err-derive",
  "log",
- "nix",
+ "nix 0.22.3",
  "serde",
  "serde_json",
  "stringreader",
@@ -987,7 +987,7 @@ source = "git+https://github.com/veracruz-project/nitro-enclave?tag=v0.1#f9313e5
 dependencies = [
  "anyhow",
  "err-derive",
- "nix",
+ "nix 0.20.2",
  "raw-fd",
  "serde_json",
 ]
@@ -997,6 +997,19 @@ name = "nix"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5e06129fb611568ef4e868c14b326274959aa70ff7776e9d55323531c374945"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4916f159ed8e5de0082076562152a76b7a1f64a01fd9d1e0fea002c37624faf"
 dependencies = [
  "bitflags",
  "cc",
@@ -1197,7 +1210,7 @@ version = "0.3.0"
 dependencies = [
  "aws-nitro-enclaves-nsm-api",
  "getrandom",
- "nix",
+ "nix 0.22.3",
 ]
 
 [[package]]
@@ -1379,7 +1392,7 @@ source = "git+https://github.com/veracruz-project/nitro-enclave?tag=v0.1#f9313e5
 dependencies = [
  "anyhow",
  "byteorder",
- "nix",
+ "nix 0.20.2",
 ]
 
 [[package]]
@@ -1865,7 +1878,7 @@ dependencies = [
  "lazy_static",
  "log",
  "mbedtls",
- "nix",
+ "nix 0.22.3",
  "policy-utils",
  "postcard",
  "reqwest",
@@ -2143,7 +2156,7 @@ dependencies = [
  "lazy_static",
  "log",
  "nitro-enclave",
- "nix",
+ "nix 0.22.3",
  "policy-utils",
  "postcard",
  "proxy-attestation-client",
