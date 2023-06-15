@@ -2188,6 +2188,7 @@ dependencies = [
  "proxy-attestation-client",
  "psa-attestation",
  "rand",
+ "raw-fd",
  "reqwest",
  "serde",
  "serde_json",
