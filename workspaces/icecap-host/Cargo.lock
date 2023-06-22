@@ -1987,7 +1987,6 @@ dependencies = [
  "log",
  "nitro-enclave",
  "nix",
- "openssl",
  "policy-utils",
  "postcard",
  "proxy-attestation-client",

@@ -9,7 +9,7 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-#[cfg(feature = "icecap")]
+#[cfg(all(feature = "icecap", not(feature = "icecap-cca")))]
 pub mod icecap;
 #[cfg(feature = "icecap-cca")]
 pub mod icecap_cca;
