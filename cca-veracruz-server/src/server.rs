@@ -9,7 +9,7 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-use crate::common::{VeracruzServer, VeracruzServerError};
+use anyhow::anyhow;
 use err_derive::Error;
 use io_utils::{
     nix::{receive_message, send_message},
@@ -18,12 +18,10 @@ use log::{debug, error, info, warn};
 use nix::sys::signal;
 use nix::unistd::read;
 use policy_utils::policy::Policy;
-use rand::Rng;
 use signal_hook::{
     consts::SIGINT,
     iterator::{Handle, Signals},
 };
-
 
 use std::{
     convert::TryFrom,
@@ -42,12 +40,13 @@ use std::{
 };
 use std::os::unix::io::IntoRawFd;
 use tempfile::{self, TempDir};
-use transport_protocol::{
-    parse_proxy_attestation_server_response, serialize_native_psa_attestation_token,
-};
+// use transport_protocol::{
+//     parse_proxy_attestation_server_response, serialize_native_psa_attestation_token,
+// };
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
 };
+use veracruz_server::common::{VeracruzServer, VeracruzServerError};
 use raw_fd;
 
 /// Class of CCA-specific errors.
@@ -64,6 +63,13 @@ pub enum CCAError {
     #[error(display = "CCA: Unexpected response from runtime manager: {:?}", _0)]
     UnexpectedRuntimeManagerResponse(RuntimeManagerResponse),
 }
+
+impl From<CCAError> for VeracruzServerError {
+    fn from(error: CCAError) -> Self {
+        VeracruzServerError::Anyhow(anyhow!(error))
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Constants.
@@ -338,76 +344,16 @@ impl CCAEnclave {
     }
 }
 
-
-
 pub struct VeracruzServerCCA {
     enclave: CCAEnclave,
 }
 
 impl VeracruzServerCCA {
-    /// Reads TLS data from the Runtime Manager enclave.  Implicitly assumes
-    /// that the Runtime Manager enclave has more data to be read.  Returns
-    /// `Ok((alive_status, buffer))` if more TLS data could be read from the
-    /// enclave, where `buffer` is a buffer of TLS data and `alive_status`
-    /// captures the status of the TLS connection.
-    ///
-    /// Returns an appropriate error if:
-    ///
-    /// 1. The TLS data request message cannot be serialized, or transmitted
-    ///    to the enclave.
-    /// 2. A response is not received back from the Enclave in response to
-    ///    the message sent in (1) above, or the message cannot be
-    ///    deserialized.
-    /// 3. The Runtime Manager enclave sends back a message indicating that
-    ///    it was not expecting further TLS data to be requested.
-    pub fn read_tls_data(
-        &mut self,
-        session_id: u32,
-    ) -> Result<(bool, Vec<u8>), VeracruzServerError> {
-        info!(
-            "Reading TLS data from Runtime Manager enclave (with session: {}).",
-            session_id
-        );
-
-        match self.communicate(&RuntimeManagerRequest::GetTlsData(session_id))? {
-            RuntimeManagerResponse::TlsData(buffer, alive) => {
-                info!("{} bytes of TLS data received from Runtime Manager enclave (alive status: {}).", buffer.len(), alive);
-
-                Ok((alive, buffer))
-            }
-            otherwise => {
-                error!("Unexpected reply received back from Runtime Manager enclave.  Received: {:?}.", otherwise);
-
-                Err(VeracruzServerError::InvalidRuntimeManagerResponse(
-                    otherwise,
-                ))
-            }
-        }
-    }
-
-    fn communicate(
-        &mut self,
-        request: &RuntimeManagerRequest,
-    ) -> Result<RuntimeManagerResponse, VeracruzServerError> {
-        self.enclave.communicate(request)
-    }
-
     /// Kills the Runtime Manager enclave, then closes TCP connection.
     #[inline]
     fn shutdown_isolate(&mut self) -> Result<(), Box<dyn Error>> {
         unsafe { self.enclave.shutdown()?; };
         Ok(())
-
-        // info!("Shutting down Linux runtime manager enclave.");
-
-        // info!("Closing TCP connection...");
-        // self.runtime_manager_socket.shutdown(Shutdown::Both)?;
-
-        // info!("Killing and Runtime Manager process...");
-        // self.runtime_manager_process.kill()?;
-
-        // info!("TCP connection and process killed.");
-        // Ok(())
     }
 }
 
@@ -433,10 +379,7 @@ impl Drop for VeracruzServerCCA {
 
 impl VeracruzServer for VeracruzServerCCA {
     /// Creates a new instance of the `VeracruzServerCCA` type.
-    fn new(policy_json: &str) -> Result<Self, VeracruzServerError>
-    where
-        Self: Sized,
-    {
+    fn new(policy_json: &str) -> Result<Self, VeracruzServerError> {
         // TODO: add in dummy measurement and attestation token issuance here
         // which will use fields from the JSON policy file.
         let policy = Policy::from_json(policy_json)?;
@@ -452,15 +395,20 @@ impl VeracruzServer for VeracruzServerCCA {
             e
         })?;
 
-        let mut enclave = Self{enclave: CCAEnclave::spawn()?};
+        let mut meta = Self{enclave: CCAEnclave::spawn()?};
 
-        let (token, csr) =
-        match enclave.communicate(&RuntimeManagerRequest::Attestation(challenge, challenge_id))? {
-            RuntimeManagerResponse::AttestationData(token, csr) => (token, csr),
-            resp => {
-                return Err(VeracruzServerError::CCAError(
-                    CCAError::UnexpectedRuntimeManagerResponse(resp),
-                ))
+        let (token, csr) = {
+            let token = RuntimeManagerRequest::Attestation(challenge, challenge_id);
+            meta.enclave.send_buffer(&bincode::serialize(&token)?)?;
+            // read the response
+            let response = meta.enclave.receive_buffer()?;
+            match bincode::deserialize(&response[..])? {
+                RuntimeManagerResponse::AttestationData(token, csr) => (token, csr),
+                response_message => {
+                    return Err(VeracruzServerError::InvalidRuntimeManagerResponse(
+                        response_message,
+                    ))
+                }
             }
         };
 
@@ -471,158 +419,21 @@ impl VeracruzServer for VeracruzServerCCA {
             challenge_id,
         )?;
 
-
-        // let (root_cert, compute_cert) = {
-        //     let req =
-        //         transport_protocol::serialize_native_psa_attestation_token(&token, &csr, challenge_id)?;
-        //     let req = base64::encode(&req);
-        //     let url = format!(
-        //         "{:}/PSA/AttestationToken",
-        //         policy.proxy_attestation_server_url()
-        //     );
-        //     let resp = post_buffer(&url, &req)?;
-        //     let resp = base64::decode(&resp)?;
-        //     let pasr = transport_protocol::parse_proxy_attestation_server_response(None, &resp)?;
-        //     let cert_chain = pasr.get_cert_chain();
-        //     let root_cert = cert_chain.get_root_cert();
-        //     let compute_cert = cert_chain.get_enclave_cert();
-        //     (root_cert.to_vec(), compute_cert.to_vec())
-        // };
-
-        match enclave.communicate(&RuntimeManagerRequest::Initialize(
+        meta.enclave.communicate(&RuntimeManagerRequest::Initialize(
             policy_json.to_string(),
             cert_chain
-            // vec![compute_cert, root_cert],
-        ))? {
-            RuntimeManagerResponse::Status(Status::Success) => (),
-            resp => {
-                return Err(VeracruzServerError::CCAError(
-                    CCAError::UnexpectedRuntimeManagerResponse(resp),
-                ))
-            }
-        }
+        ))?;
 
-        Ok(enclave)
+        Ok(meta)
     }
 
-    // #[inline]
-    // fn plaintext_data(
-    //     &mut self,
-    //     _data: Vec<u8>,
-    // ) -> Result<Option<Vec<u8>>, VeracruzServerError> {
-    //     Err(VeracruzServerError::UnimplementedError)
-    // }
-
-    fn new_tls_session(&mut self) -> Result<u32, VeracruzServerError> {
-        info!("Requesting new TLS session.");
-
-        let message: RuntimeManagerResponse = self.communicate(&RuntimeManagerRequest::NewTlsSession)?;
-        match message {
-            RuntimeManagerResponse::TlsSession(session_id) => {
-                info!("Enclave started new TLS session with ID: {}.", session_id);
-                Ok(session_id)
-            },
-            otherwise => {
-                error!(
-                    "Unexpected response returned from enclave.  Received: {:?}.",
-                    otherwise
-                );
-                Err(VeracruzServerError::InvalidRuntimeManagerResponse(
-                    otherwise,
-                ))
-            }
-        }
+    fn send_buffer(&mut self, buffer: &[u8]) -> Result<(), VeracruzServerError> {
+        let ret = self.enclave.send_buffer(buffer)?;
+        return Ok(ret);
     }
 
-    // fn close_tls_session(&mut self, session_id: u32) -> Result<(), VeracruzServerError> {
-    //     info!("Requesting close of TLS session with ID: {}.", session_id);
-
-    //     let message: RuntimeManagerResponse = self.communicate(&RuntimeManagerRequest::CloseTlsSession(session_id))?;
-    //     match message {
-    //         RuntimeManagerResponse::Status(Status::Success) => {
-    //             info!("TLS session successfully closed.");
-    //             Ok(())
-    //         }
-    //         otherwise => {
-    //             error!(
-    //                 "Unexpected response returned from enclave.  Received: {:?}.",
-    //                 otherwise
-    //             );
-    //             Err(VeracruzServerError::CCAError(
-    //                 CCAError::UnexpectedRuntimeManagerResponse(otherwise)))
-    //         }
-    //     }
-    // }
-
-    fn tls_data(
-        &mut self,
-        session_id: u32,
-        input: Vec<u8>,
-    ) -> Result<(bool, Option<Vec<Vec<u8>>>), VeracruzServerError> {
-        info!(
-            "Sending TLS data to runtime manager enclave (with session {}).",
-            session_id
-        );
-
-        let std_message: RuntimeManagerRequest =
-            RuntimeManagerRequest::SendTlsData(session_id, input);
-        let std_buffer: Vec<u8> = bincode::serialize(&std_message)?;
-
-        self.enclave.send_buffer(&std_buffer)?;
-
-        let received_buffer: Vec<u8> = self.enclave.receive_buffer()?;
-
-        let received_message: RuntimeManagerResponse = bincode::deserialize(&received_buffer)?;
-        match received_message {
-            RuntimeManagerResponse::Status(status) => match status {
-                Status::Success => {
-                    info!("Runtime Manager enclave successfully received TLS data.");
-                    ()
-                },
-                _ => {
-                    return Err(VeracruzServerError::Status(status))
-                },
-            },
-            _ => {
-                return Err(VeracruzServerError::InvalidRuntimeManagerResponse(
-                    received_message,
-                ))
-            }
-        }
-
-        let mut active_flag = true;
-        let mut ret_array = Vec::new();
-        loop {
-            let gtd_message = RuntimeManagerRequest::GetTlsData(session_id);
-            let gtd_buffer: Vec<u8> = bincode::serialize(&gtd_message)?;
-
-            self.enclave.send_buffer(&gtd_buffer)?;
-
-            let received_buffer: Vec<u8> = self.enclave.receive_buffer()?;
-
-            let received_message: RuntimeManagerResponse =
-                bincode::deserialize(&received_buffer)?;
-            match received_message {
-                RuntimeManagerResponse::TlsData(data, alive) => {
-                    if !alive {
-                        active_flag = false
-                    }
-                    if data.len() == 0 {
-                        break;
-                    }
-                    ret_array.push(data);
-                }
-                _ => return Err(VeracruzServerError::Status(Status::Fail)),
-            }
-        }
-
-        Ok((
-            active_flag,
-            if !ret_array.is_empty() {
-                Some(ret_array)
-            } else {
-                None
-            },
-        ))
+    fn receive_buffer(&mut self) -> Result<Vec<u8>, VeracruzServerError> {
+        let ret = self.enclave.receive_buffer()?;
+        return Ok(ret);
     }
 }
