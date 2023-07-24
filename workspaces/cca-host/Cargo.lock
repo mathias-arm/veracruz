@@ -33,6 +33,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "annotate-snippets"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3b9d411ecbaf79885c6df4d75fff75858d5995ff25385657a28af47e82f9c36"
+dependencies = [
+ "unicode-width",
+ "yansi-term",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -90,7 +100,7 @@ checksum = "17e83ef53714474149215e48438d2cf8f96fb76ae5a00f21f16051fab79c0627"
 dependencies = [
  "libc",
  "log",
- "nix",
+ "nix 0.20.2",
  "serde",
  "serde_bytes",
  "serde_cbor",
@@ -131,6 +141,30 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
+ "which",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.65.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+dependencies = [
+ "annotate-snippets",
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "lazy_static",
+ "lazycell",
+ "log",
+ "peeking_take_while",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash",
+ "shlex",
+ "syn 2.0.27",
  "which",
 ]
 
@@ -186,6 +220,28 @@ dependencies = [
  "tests",
  "veracruz-client",
  "veracruz-server",
+]
+
+[[package]]
+name = "cca-veracruz-server"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "env_logger",
+ "err-derive",
+ "io-utils",
+ "lazy_static",
+ "log",
+ "nix 0.20.2",
+ "policy-utils",
+ "proxy-attestation-client",
+ "raw-fd",
+ "signal-hook",
+ "structopt",
+ "tempfile",
+ "veracruz-server",
+ "veracruz-utils",
 ]
 
 [[package]]
@@ -603,6 +659,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "icecap-veracruz-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "env_logger",
+ "err-derive",
+ "lazy_static",
+ "log",
+ "policy-utils",
+ "proxy-attestation-client",
+ "signal-hook",
+ "structopt",
+ "tempfile",
+ "veracruz-server",
+ "veracruz-utils",
+]
+
+[[package]]
 name = "idna"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -641,7 +716,7 @@ dependencies = [
  "byteorder",
  "err-derive",
  "log",
- "nix",
+ "nix 0.20.2",
  "serde",
  "serde_json",
  "stringreader",
@@ -761,6 +836,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "linux-veracruz-server"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "data-encoding",
+ "env_logger",
+ "io-utils",
+ "lazy_static",
+ "log",
+ "nix 0.20.2",
+ "policy-utils",
+ "proxy-attestation-client",
+ "rand",
+ "structopt",
+ "tempfile",
+ "veracruz-server",
+ "veracruz-utils",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -778,13 +873,13 @@ checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
 
 [[package]]
 name = "mbedtls"
-version = "0.8.2"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "byteorder",
  "cc",
  "cfg-if",
- "chrono",
+ "mbedtls-platform-support",
  "mbedtls-sys-auto",
  "rs-libc",
  "serde",
@@ -793,10 +888,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "mbedtls-sys-auto"
-version = "2.28.0"
+name = "mbedtls-platform-support"
+version = "0.2.0"
 dependencies = [
- "bindgen",
+ "cc",
+ "cfg-if",
+ "chrono",
+ "mbedtls-sys-auto",
+ "once_cell",
+ "zeroize",
+]
+
+[[package]]
+name = "mbedtls-sys-auto"
+version = "3.4.0"
+dependencies = [
+ "bindgen 0.65.1",
  "cc",
  "cfg-if",
  "cmake",
@@ -867,9 +974,25 @@ source = "git+https://github.com/veracruz-project/nitro-enclave?tag=v0.1#f9313e5
 dependencies = [
  "anyhow",
  "err-derive",
- "nix",
+ "nix 0.20.2",
  "raw-fd",
  "serde_json",
+]
+
+[[package]]
+name = "nitro-veracruz-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "env_logger",
+ "log",
+ "nitro-enclave",
+ "policy-utils",
+ "proxy-attestation-client",
+ "structopt",
+ "veracruz-server",
+ "veracruz-utils",
 ]
 
 [[package]]
@@ -883,6 +1006,20 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f346ff70e7dbfd675fe90590b92d59ef2de15a8779ae305ebcbfd3f0caf59be4"
+dependencies = [
+ "autocfg",
+ "bitflags",
+ "cfg-if",
+ "libc",
+ "memoffset",
+ "pin-utils",
 ]
 
 [[package]]
@@ -1076,7 +1213,7 @@ version = "0.3.0"
 dependencies = [
  "aws-nitro-enclaves-nsm-api",
  "getrandom",
- "nix",
+ "nix 0.20.2",
 ]
 
 [[package]]
@@ -1121,6 +1258,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
+name = "prettyplease"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c64d9ba0963cdcea2e1b2230fbae2bab30eb25a174be395c41e764bfb65dd62"
+dependencies = [
+ "proc-macro2",
+ "syn 2.0.27",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1146,47 +1293,62 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.60"
+version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dec2b086b7a862cf4de201096214fa870344cf922b2b30c167badb3af3195406"
+checksum = "18fb31db3f9bddb2ea821cde30a9f70117e3f119938b5ee630b7403aa6e2ead9"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "protobuf"
-version = "2.8.1"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40361836defdd5871ff7e84096c6f6444af7fc157f8ef1789f54f147687caa20"
+checksum = "b55bad9126f378a853655831eb7363b7b01b81d19f8cb1218861086ca4a1a61e"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror",
+]
 
 [[package]]
 name = "protobuf-codegen"
-version = "2.8.1"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12c6abd78435445fc86898ebbd0521a68438063d4a73e23527b7134e6bf58b4a"
+checksum = "0dd418ac3c91caa4032d37cb80ff0d44e2ebe637b2fb243b6234bf89cdac4901"
 dependencies = [
+ "anyhow",
+ "once_cell",
  "protobuf",
-]
-
-[[package]]
-name = "protoc"
-version = "2.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3998c4bc0af8ccbd3cc68245ee9f72663c5ae2fb78bc48ff7719aef11562edea"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "protoc-rust"
-version = "2.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "234c97039c32bb58a883d0deafa57db37e59428ce536f3bdfe1c46cffec04113"
-dependencies = [
- "protobuf",
- "protobuf-codegen",
- "protoc",
+ "protobuf-parse",
+ "regex",
  "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-parse"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d39b14605eaa1f6a340aec7f320b34064feb26c93aec35d6a9a2272a8ddfa49"
+dependencies = [
+ "anyhow",
+ "indexmap",
+ "log",
+ "protobuf",
+ "protobuf-support",
+ "tempfile",
+ "thiserror",
+ "which",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5d4d7b8601c814cfb36bcebb79f0e61e45e1e93640cf778837833bbed05c372"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
@@ -1206,7 +1368,7 @@ dependencies = [
 name = "psa-attestation"
 version = "0.3.0"
 dependencies = [
- "bindgen",
+ "bindgen 0.59.2",
  "cfg-if",
  "libc",
  "mbedtls-sys-auto",
@@ -1258,7 +1420,7 @@ source = "git+https://github.com/veracruz-project/nitro-enclave?tag=v0.1#f9313e5
 dependencies = [
  "anyhow",
  "byteorder",
- "nix",
+ "nix 0.20.2",
 ]
 
 [[package]]
@@ -1373,11 +1535,12 @@ dependencies = [
 
 [[package]]
 name = "rs-libc"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "914c985b921cf571d950d17ca33221ed54fed3c2001a329ee6fd5b15dd433260"
+checksum = "683e8c8e8aac6ffa4b2287bac3c69575d5346accac4f218ae1e084303bb174ca"
 dependencies = [
  "cc",
+ "zeroize",
 ]
 
 [[package]]
@@ -1641,9 +1804,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.18"
+version = "2.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32d41677bcbe24c20c52e7c70b0d8db04134c5d1066bf98662e2871ad200ea3e"
+checksum = "b60f673f44a8255b9c8c657daf66a596d435f2da81a555b06dc644d080ba45e0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1715,10 +1878,13 @@ dependencies = [
  "either",
  "env_logger",
  "hex",
+ "icecap-veracruz-server",
  "lazy_static",
+ "linux-veracruz-server",
  "log",
  "mbedtls",
- "nix",
+ "nitro-veracruz-server",
+ "nix 0.25.1",
  "policy-utils",
  "postcard",
  "reqwest",
@@ -1859,7 +2025,7 @@ dependencies = [
  "err-derive",
  "lazy_static",
  "protobuf",
- "protoc-rust",
+ "protobuf-codegen",
 ]
 
 [[package]]
@@ -1982,7 +2148,7 @@ dependencies = [
  "lazy_static",
  "log",
  "nitro-enclave",
- "nix",
+ "nix 0.20.2",
  "policy-utils",
  "postcard",
  "proxy-attestation-client",
@@ -2069,7 +2235,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.18",
+ "syn 2.0.27",
  "wasm-bindgen-shared",
 ]
 
@@ -2103,7 +2269,7 @@ checksum = "54681b18a46765f095758388f2d0cf16eb8d4169b639ab575a8f5693af210c7b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.18",
+ "syn 2.0.27",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -2261,6 +2427,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "yansi-term"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe5c30ade05e61656247b2e334a031dfd0cc466fadef865bdcdea8d537951bf1"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
 name = "yasna"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2269,3 +2444,9 @@ dependencies = [
  "bit-vec",
  "num-bigint",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a0956f1ba7c7909bfb66c2e9e4124ab6f6482560f6628b5aaeba39207c9aad9"
