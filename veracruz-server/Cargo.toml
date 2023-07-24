@@ -18,7 +18,7 @@ cca = [
   "policy-utils/std",
   "signal-hook",
   "tempfile",
-  "veracruz-utils/linux",
+  "veracruz-utils/cca",
   "raw-fd",
 ]
 simulation = []
