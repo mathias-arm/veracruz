@@ -9,8 +9,6 @@
 //! See the `LICENSE.md` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-#[cfg(feature = "cca")]
-use cca_veracruz_server::server::CCAError;
 use err_derive::Error;
 #[cfg(feature = "nitro")]
 use nitro_enclave::NitroError;
@@ -51,9 +49,6 @@ pub enum VeracruzServerError {
     #[cfg(feature = "nitro")]
     #[error(display = "VeracruzServer: Nitro Error:{:?}", _0)]
     NitroError(#[error(source)] NitroError),
-    #[cfg(feature = "cca")]
-    #[error(display = "VeracruzServer: CCA error: {:?}", _0)]
-    CCAError(#[error(source)] CCAError),
     #[error(display = "VeracruzServer: Join Error: {:?}.", _0)]
     JoinError(std::boxed::Box<dyn std::any::Any + Send + 'static>),
     #[error(display = "VeracruzServer: Uninitialized enclave.")]
