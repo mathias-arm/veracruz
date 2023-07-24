@@ -97,6 +97,7 @@ ci-image-sign:
 # with file permissions.
 localci-run: | $(HOME)/.cargo/registry
 	docker run --init --privileged --rm -d $(DOCKER_RUN_PARAMS) \
+		--device=/dev/vhost-vsock:/dev/vhost-vsock \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		--name $(CONTAINER)-localci-$(USER)-$(VERSION) \
 		$(IMAGE)/localci/$(USER):$(VERSION) sleep inf
