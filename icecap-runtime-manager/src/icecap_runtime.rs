@@ -56,7 +56,7 @@ impl PlatformRuntime for IcecapRuntime {
         assert_eq!(0, unsafe {
             psa_attestation::psa_initial_attest_load_key(
                 root_private_key.as_ptr(),
-                root_private_key.len() as u64,
+                root_private_key.len(),
                 &mut root_key_handle,
             )
         });
@@ -73,20 +73,20 @@ impl PlatformRuntime for IcecapRuntime {
         enclave_name.extend_from_slice(&public_key_hash);
 
         let mut token: Vec<u8> = Vec::with_capacity(2048);
-        let mut token_len: u64 = 0;
+        let mut token_len: usize = 0;
         assert_eq!(0, unsafe {
             psa_attestation::psa_initial_attest_get_token(
                 enclave_hash.as_ptr() as *const u8,
-                enclave_hash.len() as u64,
+                enclave_hash.len(),
                 csr_hash.as_ptr() as *const u8,
-                csr_hash.len() as u64,
+                csr_hash.len(),
                 enclave_name.as_ptr() as *const u8,
-                enclave_name.len() as u64,
+                enclave_name.len(),
                 challenge.as_ptr() as *const u8,
-                challenge.len() as u64,
+                challenge.len(),
                 token.as_mut_ptr() as *mut u8,
-                token.capacity() as u64,
-                &mut token_len as *mut u64,
+                token.capacity(),
+                &mut token_len,
             )
         });
         unsafe { token.set_len(token_len as usize) };
