@@ -413,3 +413,7 @@ build: elfloader
 clean:
 	rm -rf css-icecap.bin $(build_dir) t
 	cargo clean
+
+.PHONY: fmt
+fmt:
+	cargo fmt
