@@ -4,16 +4,18 @@ mod init;
 use anyhow::{anyhow, Error, Result};
 use io_utils::nix::{receive_buffer, send_buffer};
 use log::{debug, error, info};
-use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockFlag, SockType, VsockAddr};
+use nix::sys::socket::{
+    accept, bind, listen, socket, AddressFamily, SockFlag, SockType, VsockAddr,
+};
+use nix::unistd::{read, write};
 use runtime_manager::managers::{self, RuntimeManagerError};
+use std::io::{Read, Write};
 use std::os::unix::prelude::FromRawFd;
+use std::os::unix::prelude::RawFd;
 use uuid::Uuid;
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
 };
-use std::io::{Read, Write};
-use nix::unistd::{read, write};
-use std::os::unix::prelude::RawFd;
 
 /// The CID for the VSOCK to listen on
 /// Currently set to all 1's so it will listen on all of them
@@ -60,8 +62,11 @@ fn main() -> Result<()> {
         f
     } else {
         info!("Using virtio-console");
-        let f = nix::fcntl::open("/dev/hvc0", nix::fcntl::OFlag::O_RDWR,
-            nix::sys::stat::Mode::empty())?;
+        let f = nix::fcntl::open(
+            "/dev/hvc0",
+            nix::fcntl::OFlag::O_RDWR,
+            nix::sys::stat::Mode::empty(),
+        )?;
         debug!("Opened /dev/hvc0");
         f
     };
