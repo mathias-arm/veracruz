@@ -15,6 +15,8 @@
 mod common;
 
 use anyhow::{anyhow, Result};
+#[cfg(feature = "cca")]
+use cca_veracruz_server::cca::VeracruzServerCCA as VeracruzServerEnclave;
 use common::event::TestEvent;
 use common::proxy_attestation_server::*;
 use common::util::*;

@@ -11,9 +11,7 @@
 
 use anyhow::anyhow;
 use err_derive::Error;
-use io_utils::{
-    nix::{receive_message, send_message},
-};
+use io_utils::nix::{receive_message, send_message};
 use log::{debug, error, info, warn};
 use nix::sys::signal;
 use nix::unistd::read;
@@ -23,6 +21,7 @@ use signal_hook::{
     iterator::{Handle, Signals},
 };
 
+use std::os::unix::io::IntoRawFd;
 use std::{
     convert::TryFrom,
     env,
@@ -38,16 +37,15 @@ use std::{
     thread::{self, sleep, JoinHandle},
     time::Duration,
 };
-use std::os::unix::io::IntoRawFd;
 use tempfile::{self, TempDir};
 // use transport_protocol::{
 //     parse_proxy_attestation_server_response, serialize_native_psa_attestation_token,
 // };
+use raw_fd;
+use veracruz_server::common::{VeracruzServer, VeracruzServerError};
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
 };
-use veracruz_server::common::{VeracruzServer, VeracruzServerError};
-use raw_fd;
 
 /// Class of CCA-specific errors.
 #[derive(Debug, Error)]
@@ -70,7 +68,6 @@ impl From<CCAError> for VeracruzServerError {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////
 // Constants.
 ////////////////////////////////////////////////////////////////////////////
@@ -78,36 +75,87 @@ impl From<CCAError> for VeracruzServerError {
 const VERACRUZ_CCA_QEMU_BIN_DEFAULT: &[&str] = &["qemu-system-aarch64"];
 #[cfg(feature = "simulation")]
 const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
-    "-machine", "virt", "-cpu", "max", "-smp", "1", "-m", "1024",
-    "-M", "gic-version=3", "-nic", "none", "-nodefaults", "-nographic",
-    "-kernel", "{kernel_path}", "-initrd", "{initrd_path}",
-    "-global", "virtio-mmio.force-legacy=false",
-    "-trace", "*load*",
-    "-serial", "chardev:char0", "-chardev", "stdio,id=char0", "-append", "console=ttyAMA0",
+    "-machine",
+    "virt",
+    "-cpu",
+    "max",
+    "-smp",
+    "1",
+    "-m",
+    "1024",
+    "-M",
+    "gic-version=3",
+    "-nic",
+    "none",
+    "-nodefaults",
+    "-nographic",
+    "-kernel",
+    "{kernel_path}",
+    "-initrd",
+    "{initrd_path}",
+    "-global",
+    "virtio-mmio.force-legacy=false",
+    "-trace",
+    "*load*",
+    "-serial",
+    "chardev:char0",
+    "-chardev",
+    "stdio,id=char0",
+    "-append",
+    "console=ttyAMA0",
 ];
 
 #[cfg(not(feature = "simulation"))]
 const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
-    "-machine", "virt", "-cpu", "host", "-enable-kvm", "-smp", "1", "-m", "1024",
-    "-M", "gic-version=3", "-nic", "none", "-nodefaults", "-nographic",
-    "-kernel", "{kernel_path}", "-initrd", "{initrd_path}",
-    "-M", "confidential-guest-support=rme0", "-overcommit", "mem-lock=on",
-    "-object", "rme-guest,id=rme0,measurement-algo=sha256",
-    "-global", "virtio-mmio.force-legacy=false",
-    "-trace", "*load*", "-serial", "chardev:char0",
-    "-device", "virtio-serial,id=virtio-serial0",
-    "-chardev", "stdio,id=char0,mux=on",
-    "-device", "virtconsole,chardev=char0",
+    "-machine",
+    "virt",
+    "-cpu",
+    "host",
+    "-enable-kvm",
+    "-smp",
+    "1",
+    "-m",
+    "1024",
+    "-M",
+    "gic-version=3",
+    "-nic",
+    "none",
+    "-nodefaults",
+    "-nographic",
+    "-kernel",
+    "{kernel_path}",
+    "-initrd",
+    "{initrd_path}",
+    "-M",
+    "confidential-guest-support=rme0",
+    "-overcommit",
+    "mem-lock=on",
+    "-object",
+    "rme-guest,id=rme0,measurement-algo=sha256",
+    "-global",
+    "virtio-mmio.force-legacy=false",
+    "-trace",
+    "*load*",
+    "-serial",
+    "chardev:char0",
+    "-device",
+    "virtio-serial,id=virtio-serial0",
+    "-chardev",
+    "stdio,id=char0,mux=on",
+    "-device",
+    "virtconsole,chardev=char0",
 ];
 
 const VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT: &[&str] = &[
-    "-chardev", "socket,path={console0_path},server=on,wait=off,id=charconsole0",
-    "-device", "virtio-serial-device",
-    "-device", "virtconsole,chardev=charconsole0,id=console0",
+    "-chardev",
+    "socket,path={console0_path},server=on,wait=off,id=charconsole0",
+    "-device",
+    "virtio-serial-device",
+    "-device",
+    "virtconsole,chardev=charconsole0,id=console0",
 ];
-const VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT: &[&str] = &[
-    "-device", "vhost-vsock-pci,guest-cid={cid}",
-];
+const VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT: &[&str] =
+    &["-device", "vhost-vsock-pci,guest-cid={cid}"];
 
 const VERACRUZ_CCA_KERNEL_PATH_DEFAULT: &str = "../cca-runtime/Image.guest";
 const VERACRUZ_CCA_INITRD_PATH_DEFAULT: &str = "../cca-runtime/initrd.cpio";
@@ -152,10 +200,7 @@ impl CCAEnclave {
 
         // Allow overriding these from environment variables
         let qemu_bin = env_flags("VERACRUZ_CCA_QEMU_BIN", VERACRUZ_CCA_QEMU_BIN_DEFAULT)?;
-        let qemu_flags = env_flags(
-            "VERACRUZ_CCA_QEMU_FLAGS",
-            VERACRUZ_CCA_QEMU_FLAGS_DEFAULT,
-        )?;
+        let qemu_flags = env_flags("VERACRUZ_CCA_QEMU_FLAGS", VERACRUZ_CCA_QEMU_FLAGS_DEFAULT)?;
 
         let qemu_vsock_flags = env_flags(
             "VERACRUZ_CCA_QEMU_VSOCK_FLAGS",
@@ -177,10 +222,10 @@ impl CCAEnclave {
 
         let kernel_path = env::var("VERACRUZ_CCA_KERNEL_PATH")
             .unwrap_or_else(|_| VERACRUZ_CCA_KERNEL_PATH_DEFAULT.to_string());
-        let initrd_path =  env::var("VERACRUZ_CCA_INITRD_PATH")
+        let initrd_path = env::var("VERACRUZ_CCA_INITRD_PATH")
             .unwrap_or_else(|_| VERACRUZ_CCA_INITRD_PATH_DEFAULT.to_string());
 
-        let qemu_flags : Vec<String> = qemu_flags
+        let qemu_flags: Vec<String> = qemu_flags
             .iter()
             .map(|s| s.replace("{kernel_path}", &kernel_path))
             .map(|s| s.replace("{initrd_path}", &initrd_path))
@@ -189,7 +234,7 @@ impl CCAEnclave {
         let use_vsock = cfg!(not(feature = "simulation"));
         let use_vsock = true;
 
-        let com_flags : Vec<String> = if use_vsock {
+        let com_flags: Vec<String> = if use_vsock {
             qemu_vsock_flags
                 .iter()
                 .map(|s| s.replace("{cid}", "3"))
@@ -258,19 +303,22 @@ impl CCAEnclave {
                     nix::sys::socket::AddressFamily::Vsock,
                     nix::sys::socket::SockType::Stream,
                     nix::sys::socket::SockFlag::empty(),
-                    None
+                    None,
                 )?;
                 nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReuseAddr, &true)?;
                 nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReusePort, &true)?;
                 (addr, socket)
             } else {
-                info!("Connecting to UNIX socket '{}'", channel_path.to_str().unwrap());
+                info!(
+                    "Connecting to UNIX socket '{}'",
+                    channel_path.to_str().unwrap()
+                );
                 let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
                 let socket = nix::sys::socket::socket(
                     nix::sys::socket::AddressFamily::Unix,
                     nix::sys::socket::SockType::Stream,
                     nix::sys::socket::SockFlag::empty(),
-                    None
+                    None,
                 )?;
 
                 (addr, socket)
@@ -279,23 +327,22 @@ impl CCAEnclave {
             match nix::sys::socket::connect(socket, &addr) {
                 Ok(_) => {
                     info!("Connected");
-                    break socket
+                    break socket;
                 }
                 Err(nix::errno::Errno::ECONNREFUSED) => {
                     warn!("Connection refused");
                     thread::sleep(Duration::from_millis(100));
                     continue;
-                },
+                }
                 Err(nix::errno::Errno::ENOENT) => {
                     warn!("Connection refused (not found)");
                     thread::sleep(Duration::from_millis(100));
                     continue;
-                },
+                }
                 Err(e) => {
                     error!("Connection failed: {:?}", e);
-                    return Err(VeracruzServerError::NixError(e))
-                },
-
+                    return Err(VeracruzServerError::NixError(e));
+                }
             }
         };
 
@@ -352,7 +399,9 @@ impl VeracruzServerCCA {
     /// Kills the Runtime Manager enclave, then closes TCP connection.
     #[inline]
     fn shutdown_isolate(&mut self) -> Result<(), Box<dyn Error>> {
-        unsafe { self.enclave.shutdown()?; };
+        unsafe {
+            self.enclave.shutdown()?;
+        };
         Ok(())
     }
 }
@@ -395,7 +444,9 @@ impl VeracruzServer for VeracruzServerCCA {
             e
         })?;
 
-        let mut meta = Self{enclave: CCAEnclave::spawn()?};
+        let mut meta = Self {
+            enclave: CCAEnclave::spawn()?,
+        };
 
         let (token, csr) = {
             let token = RuntimeManagerRequest::Attestation(challenge, challenge_id);
@@ -419,10 +470,11 @@ impl VeracruzServer for VeracruzServerCCA {
             challenge_id,
         )?;
 
-        meta.enclave.communicate(&RuntimeManagerRequest::Initialize(
-            policy_json.to_string(),
-            cert_chain
-        ))?;
+        meta.enclave
+            .communicate(&RuntimeManagerRequest::Initialize(
+                policy_json.to_string(),
+                cert_chain,
+            ))?;
 
         Ok(meta)
     }
