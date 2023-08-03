@@ -4,7 +4,7 @@ mod init;
 use anyhow::{anyhow, Error, Result};
 use io_utils::nix::{receive_buffer, send_buffer};
 use log::{debug, error, info};
-use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockAddr, SockFlag, SockType};
+use nix::sys::socket::{accept, bind, listen, socket, AddressFamily, SockFlag, SockType, VsockAddr};
 use runtime_manager::managers::{self, RuntimeManagerError};
 use std::os::unix::prelude::FromRawFd;
 use uuid::Uuid;
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
             None,
         )?;
 
-        let sockaddr = SockAddr::new_vsock(CID, PORT);
+        let sockaddr = VsockAddr::new(CID, PORT);
         bind(socket_fd, &sockaddr)?;
         listen(socket_fd, BACKLOG)?;
         debug!("Waiting for vsock connection on port {}", PORT);

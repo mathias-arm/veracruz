@@ -281,12 +281,12 @@ impl CCAEnclave {
                     info!("Connected");
                     break socket
                 }
-                Err(nix::Error::Sys(nix::errno::Errno::ECONNREFUSED)) => {
+                Err(nix::errno::Errno::ECONNREFUSED) => {
                     warn!("Connection refused");
                     thread::sleep(Duration::from_millis(100));
                     continue;
                 },
-                Err(nix::Error::Sys(nix::errno::Errno::ENOENT)) => {
+                Err(nix::errno::Errno::ENOENT) => {
                     warn!("Connection refused (not found)");
                     thread::sleep(Duration::from_millis(100));
                     continue;
