@@ -1,5 +1,5 @@
 # docker image for local CI.
-# It currently uses nitro image (which is a superset of linux image) and adds icecap
+# It currently uses nitro image (which is a superset of linux image)
 #
 # AUTHORS
 #
@@ -26,19 +26,6 @@ RUN \
     install -m 755 ${REPO} /usr/bin/repo && \
     rm ${REPO}
 
-# Install sel4-deps & other IceCap python package dependencies
-RUN \
-    python3 -m pip install --no-cache-dir \
-        aenum \
-        concurrencytest \
-        hypothesis \
-        nose \
-        orderedset \
-        pyelftools \
-        sel4-deps \
-        six \
-        sortedcontainers
-
 RUN set -eux; \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
@@ -51,15 +38,7 @@ RUN set -eux; \
     tar zxf stack.tar.gz && \
     cp stack-2.9.1-linux-${arch}/stack /usr/bin && \
     chmod a+x /usr/bin/stack && \
-    rm -rf stack* && \
-    git clone https://gitlab.com/arm-research/security/icecap/capdl.git && \
-    cd capdl/capDL-tool && \
-    stack --version && \
-    make && \
-    cp parse-capDL /usr/local/bin && \
-    cd ../.. && \
-    rm -rf capdl && \
-    rm -rf $HOME/.stack
+    rm -rf stack*
 
 RUN \
     if [ -d /work/aarch64-linux-musl-native ] ; then \
