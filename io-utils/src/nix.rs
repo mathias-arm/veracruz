@@ -10,17 +10,16 @@
 //! and licensing information.
 
 use anyhow::Result;
-use byteorder::{ByteOrder, LittleEndian};
-use nix::unistd::{read, write};
-use std::os::unix::prelude::RawFd;
-use log::error;
-use serde::{de::DeserializeOwned, Serialize};
 use bincode::{deserialize, serialize};
+use byteorder::{ByteOrder, LittleEndian};
+use log::error;
+use nix::unistd::{read, write};
+use serde::{de::DeserializeOwned, Serialize};
+use std::os::unix::prelude::RawFd;
 
 /// Sends a `buffer` of data (by first transmitting an encoded length followed by
 /// the data proper) to the file descriptor `fd`.
-pub fn send_buffer(fd: RawFd, buffer: &[u8]) -> Result<()>
-{
+pub fn send_buffer(fd: RawFd, buffer: &[u8]) -> Result<()> {
     let len = buffer.len();
 
     // 1: Encode the data length and send it.
@@ -36,18 +35,16 @@ pub fn send_buffer(fd: RawFd, buffer: &[u8]) -> Result<()>
     Ok(())
 }
 
-pub fn read_exact(fd: RawFd, mut buf: &mut [u8]) -> nix::Result<(), > {
+pub fn read_exact(fd: RawFd, mut buf: &mut [u8]) -> nix::Result<()> {
     while !buf.is_empty() {
         match read(fd, buf) {
-            Ok(0) => { break },
+            Ok(0) => break,
             Ok(n) => {
                 let tmp = buf;
                 buf = &mut tmp[n..];
             }
             Err(nix::errno::Errno::EINTR) => {}
-            Err(e) => {
-                return Err(e)
-            },
+            Err(e) => return Err(e),
         }
     }
     if !buf.is_empty() {
@@ -59,8 +56,7 @@ pub fn read_exact(fd: RawFd, mut buf: &mut [u8]) -> nix::Result<(), > {
 
 /// Reads a buffer of data from a file descriptor `fd` by first reading a length
 /// of data, followed by the data proper.
-pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>>
-{
+pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>> {
     // 1. First read and decode the length of the data proper.
     let length = {
         let mut buff = [0u8; 9];
@@ -74,7 +70,6 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>>
 
     Ok(buffer)
 }
-
 
 /// Transmits a serialized message, `data`, via a socket.
 ///

@@ -12,7 +12,7 @@
 use anyhow::Result;
 use log::debug;
 use nix::sys::socket::{
-    accept, bind, listen as listen_vsock, socket, AddressFamily, VsockAddr, SockFlag, SockType,
+    accept, bind, listen as listen_vsock, socket, AddressFamily, SockFlag, SockType, VsockAddr,
 };
 use raw_fd::{receive_buffer, send_buffer};
 use runtime_manager::common_runtime::CommonRuntime;

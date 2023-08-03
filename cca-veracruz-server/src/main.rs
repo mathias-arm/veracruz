@@ -9,16 +9,15 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
-
 mod server;
 
+use crate::server::VeracruzServerCCA;
 use anyhow::anyhow;
 use clap::Parser;
 use env_logger;
 use log::info;
 use policy_utils::policy::Policy;
 use std::{fs, path, process};
-use crate::server::VeracruzServerCCA;
 use veracruz_server;
 use veracruz_server::VeracruzServer;
 
@@ -65,4 +64,3 @@ fn main() {
         std::thread::sleep(std::time::Duration::MAX);
     }
 }
-
