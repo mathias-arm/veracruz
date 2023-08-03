@@ -33,7 +33,7 @@ pub fn attestation(challenge: &[u8]) -> Result<Vec<u8>> {
                     if c == 0 {
                         Ok(r.token[0..(r.token_length as usize)].to_vec())
                     } else {
-                        Err(nix::Error::Sys(nix::errno::Errno::from_i32(c)))
+                        Err(nix::errno::Errno::from_i32(c))
                     }
                 }
                 Err(e) => {
