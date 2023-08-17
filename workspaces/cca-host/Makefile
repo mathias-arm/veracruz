@@ -57,7 +57,7 @@ install:
 test-dependencies: test-collateral $(RUNTIME_ENCLAVE_BINARY_PATH)
 
 CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
-	$(TEST_PARAMETERS) cargo test $(PROFILE_FLAG) $(TARGET) $(SIMULATION_FEATURE)
+	$(TEST_PARAMETERS) cargo test $(PROFILE_FLAG) $(TARGET) --features cca $(SIMULATION_FEATURE)
 
 test-server: test-dependencies
 	$(CARGO_TEST) -p tests --no-run -- --nocapture

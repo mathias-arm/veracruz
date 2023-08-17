@@ -13,28 +13,28 @@ use veracruz_utils::sha256::sha256;
 /// Add the policy directory, reading from environment variable `$VERACRUZ_POLICY_DIR` or using the
 /// default `test-collateral`.
 pub fn policy_dir<T: AsRef<str>>(filename: T) -> PathBuf {
-    PathBuf::from(env::var("VERACRUZ_POLICY_DIR").unwrap_or("../test-collateral".to_string()))
+    PathBuf::from(env::var("VERACRUZ_POLICY_DIR").unwrap_or("../../test-collateral".to_string()))
         .join(filename.as_ref())
 }
 
 /// Add the certificate and key directory, reading from environment variable `$VERACRUZ_TRUST_DIR`
 /// or using the default `test-collateral`.
 pub fn cert_key_dir<T: AsRef<str>>(filename: T) -> PathBuf {
-    PathBuf::from(env::var("VERACRUZ_TRUST_DIR").unwrap_or("../test-collateral".to_string()))
+    PathBuf::from(env::var("VERACRUZ_TRUST_DIR").unwrap_or("../../test-collateral".to_string()))
         .join(filename.as_ref())
 }
 
 /// Add the program directory, reading from environment variable `$VERACRUZ_PROGRAM_DIR`
 /// or using the default `test-collateral`.
 pub fn program_dir<T: AsRef<str>>(filename: T) -> PathBuf {
-    PathBuf::from(env::var("VERACRUZ_PROGRAM_DIR").unwrap_or("../test-collateral".to_string()))
+    PathBuf::from(env::var("VERACRUZ_PROGRAM_DIR").unwrap_or("../../test-collateral".to_string()))
         .join(filename.as_ref())
 }
 
 /// Add the data directory, reading from environment variable `$VERACRUZ_DATA_DIR`
 /// or using the default `test-collateral`.
 pub fn data_dir<T: AsRef<str>>(filename: T) -> PathBuf {
-    PathBuf::from(env::var("VERACRUZ_DATA_DIR").unwrap_or("../test-collateral".to_string()))
+    PathBuf::from(env::var("VERACRUZ_DATA_DIR").unwrap_or("../../test-collateral".to_string()))
         .join(filename.as_ref())
 }
 

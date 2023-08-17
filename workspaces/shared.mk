@@ -56,37 +56,37 @@ $(WORKSPACE_DIR)/applications/target/wasm32-wasi/$(PROFILE_PATH)/%.wasm:
 ###################################################
 # Keys and certs
 
-CA_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/CAKey.pem
-CA_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/CACert.pem
+CA_KEY = $(WORKSPACE_DIR)/host/test-collateral/CAKey.pem
+CA_CRT = $(WORKSPACE_DIR)/host/test-collateral/CACert.pem
 
-$(CA_KEY): $(WORKSPACE_DIR)/host/crates/test-collateral
+$(CA_KEY): $(WORKSPACE_DIR)/host/test-collateral
 	# The -noout argument suppresses the inclusion of the EC PARAMETERS in the generated file
 	openssl ecparam -name prime256v1 -genkey -noout -out $@
 
-$(CA_CRT): $(CA_KEY) $(WORKSPACE_DIR)/host/crates/test-collateral
+$(CA_CRT): $(CA_KEY) $(WORKSPACE_DIR)/host/test-collateral
 	openssl req -x509 -key $< -out $@ -config $(WORKSPACE_DIR)/ca-cert.conf
 
-CLIENT_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/client_key.pem
-CLIENT_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/client_cert.pem
-PROGRAM_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/program_client_key.pem
-PROGRAM_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/program_client_cert.pem
-DATA_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/data_client_key.pem
-DATA_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/data_client_cert.pem
-RESULT_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/result_client_key.pem
-RESULT_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/result_client_cert.pem
-NEVER_KEY = $(WORKSPACE_DIR)/host/crates/test-collateral/never_used_key.pem
-NEVER_CRT = $(WORKSPACE_DIR)/host/crates/test-collateral/never_used_cert.pem
+CLIENT_KEY = $(WORKSPACE_DIR)/host/test-collateral/client_key.pem
+CLIENT_CRT = $(WORKSPACE_DIR)/host/test-collateral/client_cert.pem
+PROGRAM_KEY = $(WORKSPACE_DIR)/host/test-collateral/program_client_key.pem
+PROGRAM_CRT = $(WORKSPACE_DIR)/host/test-collateral/program_client_cert.pem
+DATA_KEY = $(WORKSPACE_DIR)/host/test-collateral/data_client_key.pem
+DATA_CRT = $(WORKSPACE_DIR)/host/test-collateral/data_client_cert.pem
+RESULT_KEY = $(WORKSPACE_DIR)/host/test-collateral/result_client_key.pem
+RESULT_CRT = $(WORKSPACE_DIR)/host/test-collateral/result_client_cert.pem
+NEVER_KEY = $(WORKSPACE_DIR)/host/test-collateral/never_used_key.pem
+NEVER_CRT = $(WORKSPACE_DIR)/host/test-collateral/never_used_cert.pem
 
 CERTS = $(CLIENT_CRT) $(PROGRAM_CRT) $(DATA_CRT) $(RESULT_CRT) $(NEVER_CRT)
 KEYS = $(CLIENT_KEY) $(PROGRAM_KEY) $(DATA_KEY) $(RESULT_KEY) $(NEVER_KEY)
 
-$(WORKSPACE_DIR)/host/crates/test-collateral:
+$(WORKSPACE_DIR)/host/test-collateral:
 	mkdir -p $@
 
-$(KEYS): %.pem : $(WORKSPACE_DIR)/host/crates/test-collateral
+$(KEYS): %.pem : $(WORKSPACE_DIR)/host/test-collateral
 	openssl ecparam -name prime256v1 -genkey -out $@
 
-$(CERTS): $(WORKSPACE_DIR)/host/crates/test-collateral/%_cert.pem : $(WORKSPACE_DIR)/host/crates/test-collateral/%_key.pem $(WORKSPACE_DIR)/host/crates/test-collateral
+$(CERTS): $(WORKSPACE_DIR)/host/test-collateral/%_cert.pem : $(WORKSPACE_DIR)/host/test-collateral/%_key.pem $(WORKSPACE_DIR)/host/test-collateral
 	openssl req -x509 -key $< -out $@ -config $(WORKSPACE_DIR)/cert.conf
 
 ###################################################
@@ -96,7 +96,7 @@ datasets: $(OUT_DIR) $(CERTS) $(KEYS) $(CA_KEY) $(CA_CRT)
 	$(MAKE) -C $(WORKSPACE_DIR)/data-generators
 	$(MAKE) -C ../host datasets
 	cp -r crates/examples/datasets/* $(OUT_DIR)
-	cp crates/test-collateral/*.pem $(OUT_DIR)
+	cp $(CERTS) $(KEYS) $(CA_KEY) $(CA_CRT) $(OUT_DIR)
 
 ###################################################
 # Generate Policy Files

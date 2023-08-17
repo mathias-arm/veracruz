@@ -15,14 +15,12 @@
 mod common;
 
 use anyhow::{anyhow, Result};
-#[cfg(feature = "cca")]
-use cca_veracruz_server::cca::VeracruzServerCCA as VeracruzServerEnclave;
 use common::event::TestEvent;
 use common::proxy_attestation_server::*;
 use common::util::*;
 use env_logger;
 #[cfg(feature = "cca")]
-use cca_veracruz_server::cca::VeracruzServerCCA as VeracruzServerEnclave;
+use cca_veracruz_server::server::VeracruzServerCCA as VeracruzServerEnclave;
 #[cfg(feature = "linux")]
 use linux_veracruz_server::server::VeracruzServerLinux as VeracruzServerEnclave;
 use log::{error, info};

@@ -278,6 +278,9 @@ fn veracruz_phase4_linear_regression_two_clients_parallel() {
 }
 
 fn server_tls_loop(policy_json: String) {
+    #[cfg(feature = "cca")]
+    let platform_veracruz_server =
+        cca_veracruz_server::server::VeracruzServerCCA::new(&policy_json).unwrap();
     #[cfg(feature = "linux")]
     let platform_veracruz_server =
         linux_veracruz_server::server::VeracruzServerLinux::new(&policy_json).unwrap();

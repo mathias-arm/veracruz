@@ -16,6 +16,7 @@ path = "./src/lib.rs"
 default = []
 debug = ["veracruz-server/debug"]
 cca = [
+  "cca-veracruz-server",
   "policy-utils/std",
   "veracruz-server/cca",
   "veracruz-utils/linux",
@@ -37,6 +38,7 @@ nitro = [
 [dependencies]
 actix-rt = "2"
 anyhow = "1"
+cca-veracruz-server = { path = "../cca-veracruz-server", optional = true }
 either = "1.6.1"
 env_logger = "0.10.0"
 hex = "0.4.2"
