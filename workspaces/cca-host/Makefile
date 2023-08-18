@@ -59,6 +59,9 @@ test-dependencies: test-collateral $(RUNTIME_ENCLAVE_BINARY_PATH)
 CARGO_TEST = RUNTIME_ENCLAVE_BINARY_PATH=$(RUNTIME_ENCLAVE_BINARY_PATH) \
 	$(TEST_PARAMETERS) cargo test $(PROFILE_FLAG) $(TARGET) --features cca $(SIMULATION_FEATURE)
 
+build-tests:
+	$(CARGO_TEST) --no-run
+
 test-server: test-dependencies
 	$(CARGO_TEST) -p tests --no-run -- --nocapture
 	RUST_LOG="server_test=info,error" \
