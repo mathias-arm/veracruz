@@ -21,7 +21,6 @@ cca = [
   "veracruz-utils/cca",
   "raw-fd",
 ]
-simulation = []
 # a feature to enable CLI-only dependencies
 # https://stackoverflow.com/questions/35711044/how-can-i-specify-binary-only-dependencies
 cli = [

@@ -13,7 +13,7 @@ use anyhow::anyhow;
 use err_derive::Error;
 use io_utils::nix::{receive_message, send_message};
 use log::{debug, error, info, warn};
-use nix::sys::signal;
+use nix::sys::{signal, socket};
 use nix::unistd::read;
 use policy_utils::policy::Policy;
 use signal_hook::{
@@ -38,9 +38,6 @@ use std::{
     time::Duration,
 };
 use tempfile::{self, TempDir};
-// use transport_protocol::{
-//     parse_proxy_attestation_server_response, serialize_native_psa_attestation_token,
-// };
 use raw_fd;
 use veracruz_server::common::{VeracruzServer, VeracruzServerError};
 use veracruz_utils::runtime_manager_message::{
@@ -232,7 +229,6 @@ impl CCAEnclave {
             .collect();
 
         let use_vsock = cfg!(not(feature = "simulation"));
-        let use_vsock = true;
 
         let com_flags: Vec<String> = if use_vsock {
             qemu_vsock_flags
@@ -296,52 +292,65 @@ impl CCAEnclave {
         thread::sleep(Duration::from_millis(5000));
 
         let channel = loop {
-            let (addr, socket) = if use_vsock {
+            if use_vsock {
                 info!("Connecting to vsock cid: {} port: {}", 3, VERACRUZ_PORT);
-                let addr = nix::sys::socket::SockAddr::new_vsock(3, VERACRUZ_PORT);
-                let socket = nix::sys::socket::socket(
-                    nix::sys::socket::AddressFamily::Vsock,
-                    nix::sys::socket::SockType::Stream,
-                    nix::sys::socket::SockFlag::empty(),
+                let addr = socket::VsockAddr::new(3, VERACRUZ_PORT);
+                let socket = socket::socket(
+                    socket::AddressFamily::Vsock,
+                    socket::SockType::Stream,
+                    socket::SockFlag::empty(),
                     None,
                 )?;
-                nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReuseAddr, &true)?;
-                nix::sys::socket::setsockopt(socket, nix::sys::socket::sockopt::ReusePort, &true)?;
-                (addr, socket)
+                socket::setsockopt(socket, socket::sockopt::ReuseAddr, &true)?;
+                socket::setsockopt(socket, socket::sockopt::ReusePort, &true)?;
+
+                match socket::connect(socket, &addr) {
+                    Ok(_) => {
+                        info!("Connected");
+                        break socket;
+                    }
+                    Err(nix::errno::Errno::ECONNREFUSED) => {
+                        warn!("Connection refused");
+                        thread::sleep(Duration::from_millis(100));
+                        continue;
+                    }
+                    Err(e) => {
+                        error!("Connection failed: {:?}", e);
+                        return Err(VeracruzServerError::NixError(e));
+                    }
+                }
             } else {
                 info!(
                     "Connecting to UNIX socket '{}'",
                     channel_path.to_str().unwrap()
                 );
-                let addr = nix::sys::socket::SockAddr::new_unix(&channel_path)?;
-                let socket = nix::sys::socket::socket(
-                    nix::sys::socket::AddressFamily::Unix,
-                    nix::sys::socket::SockType::Stream,
-                    nix::sys::socket::SockFlag::empty(),
+                let addr = socket::UnixAddr::new(&channel_path)?;
+                let socket = socket::socket(
+                    socket::AddressFamily::Unix,
+                    socket::SockType::Stream,
+                    socket::SockFlag::empty(),
                     None,
                 )?;
 
-                (addr, socket)
-            };
-
-            match nix::sys::socket::connect(socket, &addr) {
-                Ok(_) => {
-                    info!("Connected");
-                    break socket;
-                }
-                Err(nix::errno::Errno::ECONNREFUSED) => {
-                    warn!("Connection refused");
-                    thread::sleep(Duration::from_millis(100));
-                    continue;
-                }
-                Err(nix::errno::Errno::ENOENT) => {
-                    warn!("Connection refused (not found)");
-                    thread::sleep(Duration::from_millis(100));
-                    continue;
-                }
-                Err(e) => {
-                    error!("Connection failed: {:?}", e);
-                    return Err(VeracruzServerError::NixError(e));
+                match socket::connect(socket, &addr) {
+                    Ok(_) => {
+                        info!("Connected");
+                        break socket;
+                    }
+                    Err(nix::errno::Errno::ECONNREFUSED) => {
+                        warn!("Connection refused");
+                        thread::sleep(Duration::from_millis(100));
+                        continue;
+                    }
+                    Err(nix::errno::Errno::ENOENT) => {
+                        warn!("Connection refused (not found)");
+                        thread::sleep(Duration::from_millis(100));
+                        continue;
+                    }
+                    Err(e) => {
+                        error!("Connection failed: {:?}", e);
+                        return Err(VeracruzServerError::NixError(e));
+                    }
                 }
             }
         };

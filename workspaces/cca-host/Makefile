@@ -29,7 +29,7 @@ include $(WORKSPACE_DIR)/shared.mk
 SIMULATION ?= 0
 ifeq ($(SIMULATION),1)
 	TARGET =--target $(shell uname -m)-unknown-linux-gnu
-	SIMULATION_FEATURE = --features veracruz-server/simulation
+	SIMULATION_FEATURE = --features cca-veracruz-server/simulation
 endif
 
 TEST_PARAMETERS = VERACRUZ_POLICY_DIR=$(OUT_DIR) \
