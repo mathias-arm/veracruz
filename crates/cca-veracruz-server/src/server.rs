@@ -11,7 +11,7 @@
 
 use anyhow::anyhow;
 use err_derive::Error;
-use io_utils::nix::{receive_message, send_message};
+use io_utils::nix::{receive_buffer, send_buffer};
 use log::{debug, error, info, warn};
 use nix::sys::{signal, socket};
 use nix::unistd::read;
@@ -38,7 +38,6 @@ use std::{
     time::Duration,
 };
 use tempfile::{self, TempDir};
-use raw_fd;
 use veracruz_server::common::{VeracruzServer, VeracruzServerError};
 use veracruz_utils::runtime_manager_message::{
     RuntimeManagerRequest, RuntimeManagerResponse, Status,
@@ -96,10 +95,12 @@ const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
     "*load*",
     "-serial",
     "chardev:char0",
+    "-device",
+    "virtio-serial,id=virtio-serial0",
     "-chardev",
-    "stdio,id=char0",
-    "-append",
-    "console=ttyAMA0",
+    "stdio,id=char0,mux=on",
+    "-device",
+    "virtconsole,chardev=char0",
 ];
 
 #[cfg(not(feature = "simulation"))]
@@ -145,12 +146,13 @@ const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
 
 const VERACRUZ_CCA_QEMU_CONSOLE_FLAGS_DEFAULT: &[&str] = &[
     "-chardev",
-    "socket,path={console0_path},server=on,wait=off,id=charconsole0",
+    "socket,path={console0_path},server=on,wait=off,id=serial1",
     "-device",
-    "virtio-serial-device",
+    "virtio-serial",
     "-device",
-    "virtconsole,chardev=charconsole0,id=console0",
+    "virtserialport,chardev=serial1",
 ];
+
 const VERACRUZ_CCA_QEMU_VSOCK_FLAGS_DEFAULT: &[&str] =
     &["-device", "vhost-vsock-pci,guest-cid={cid}"];
 
@@ -289,7 +291,9 @@ impl CCAEnclave {
             }
         });
 
-        thread::sleep(Duration::from_millis(5000));
+        if use_vsock {
+            thread::sleep(Duration::from_millis(5000));
+        }
 
         let channel = loop {
             if use_vsock {
@@ -372,10 +376,10 @@ impl CCAEnclave {
     ) -> Result<RuntimeManagerResponse, VeracruzServerError> {
         // send request
         let buffer = bincode::serialize(request)?;
-        raw_fd::send_buffer(self.channel, &buffer)?;
+        send_buffer(self.channel, &buffer)?;
 
         // recv response
-        let buffer: Vec<u8> = raw_fd::receive_buffer(self.channel)?;
+        let buffer: Vec<u8> = receive_buffer(self.channel)?;
         let response = bincode::deserialize::<RuntimeManagerResponse>(&buffer)?;
 
         Ok(response)
@@ -383,12 +387,12 @@ impl CCAEnclave {
 
     /// send a buffer of data to the enclave
     pub fn send_buffer(&self, buffer: &[u8]) -> anyhow::Result<()> {
-        raw_fd::send_buffer(self.channel, buffer)
+        send_buffer(self.channel, buffer)
     }
 
     /// receive a buffer of data from the enclave
     pub fn receive_buffer(&self) -> anyhow::Result<Vec<u8>> {
-        raw_fd::receive_buffer(self.channel)
+        receive_buffer(self.channel)
     }
 
     // NOTE close can report errors, but drop can still happen in weird cases

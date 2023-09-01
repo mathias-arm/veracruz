@@ -61,13 +61,13 @@ fn main() -> Result<()> {
         debug!("vsock connection accepted");
         f
     } else {
-        info!("Using virtio-console");
+        info!("Using virtio-serial");
         let f = nix::fcntl::open(
-            "/dev/hvc0",
+            "/dev/vport1p1",
             nix::fcntl::OFlag::O_RDWR,
             nix::sys::stat::Mode::empty(),
         )?;
-        debug!("Opened /dev/hvc0");
+        debug!("Opened /dev/vport1p1");
         f
     };
 

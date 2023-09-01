@@ -16,12 +16,12 @@ anyhow = "1.0"
 bincode = { version = "1.2.1", default-features = false }
 env_logger = "0.10.0"
 hex = "0.4"
-io-utils = { path = "../../crates/io-utils", features = [ "cca" ] }
+io-utils = { path = "../io-utils", features = [ "cca" ] }
 libc = "0.2.144"
 log = "0.4.13"
 nix = "0.26"
-runtime-manager = { path = "../../crates/runtime-manager", default-features = false, features = [ "cca" ] }
+runtime-manager = { path = "../runtime-manager", default-features = false, features = [ "cca" ] }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = "1.0"
 uuid = { version = "1.1.2", features = ["serde"] }
-veracruz-utils = { path = "../../crates/veracruz-utils", features = ["std"] }
+veracruz-utils = { path = "../veracruz-utils", features = ["std"] }

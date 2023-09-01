@@ -18,7 +18,6 @@ log = "0.4.13"
 nix = { version = "0.26" }
 policy-utils = { path = "../policy-utils" }
 proxy-attestation-client = { git = "https://github.com/veracruz-project/proxy-attestation-client", tag = "v0.2" }
-raw-fd = { git = "https://github.com/veracruz-project/nitro-enclave", tag = "v0.2" }
 signal-hook = { version = "0.3.13" }
 tempfile = { version = "3.2.0" }
 veracruz-server = { path = "../veracruz-server", features = ["cca"] }
