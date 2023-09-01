@@ -36,7 +36,6 @@ nitro = [
 ]
 
 [dependencies]
-actix-rt = "2"
 anyhow = "1"
 cca-veracruz-server = { path = "../cca-veracruz-server", optional = true }
 either = "1.6.1"
