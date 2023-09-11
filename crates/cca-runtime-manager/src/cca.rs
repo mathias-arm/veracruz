@@ -1,47 +1,61 @@
 use nix::fcntl::{open, OFlag};
 use nix::sys::stat::Mode;
-use nix::unistd::close;
+use nix::unistd::{close, mkdir, read, write};
 use nix::Result;
 
-#[allow(non_camel_case_types)]
-#[repr(C)]
-pub struct cca_ioctl_request {
-    challenge: [u8; 64],
-    token: [u8; 4096],
-    token_length: u64,
-}
-
-nix::ioctl_readwrite!(cca_attestation_request, b'A', 1, cca_ioctl_request);
-
 pub fn attestation(challenge: &[u8]) -> Result<Vec<u8>> {
-    match open("/dev/cca_attestation", OFlag::empty(), Mode::empty()) {
-        Ok(f) => {
-            let mut r = cca_ioctl_request {
-                challenge: [0u8; 64],
-                token: [0u8; 4096],
-                token_length: 0u64,
-            };
+    let chmod_0755: Mode = Mode::S_IRWXU | Mode::S_IRGRP | Mode::S_IXGRP |
+        Mode::S_IROTH | Mode::S_IXOTH;
+    let report = "/sys/kernel/config/tsm/report/report0";
+    let inblob = format!("{report}/inblob");
+    let outblob = format!("{report}/outblob");
 
-            let m = std::cmp::min(r.challenge.len(), challenge.len());
-            let (src, _) = challenge.split_at(m);
-            let (dst, _) = r.challenge.split_at_mut(m);
-            dst.copy_from_slice(src);
+    mkdir(report, chmod_0755).ok();
 
-            match unsafe { cca_attestation_request(f, &mut r) } {
-                Ok(c) => {
-                    let _ = close(f);
-                    if c == 0 {
-                        Ok(r.token[0..(r.token_length as usize)].to_vec())
-                    } else {
-                        Err(nix::errno::Errno::from_i32(c))
-                    }
-                }
-                Err(e) => {
-                    let _ = close(f);
-                    Err(e)
+    let s = nix::sys::stat::stat(inblob.as_str());
+
+    let mut c = challenge.clone();
+    match open(inblob.as_str(), OFlag::O_WRONLY, Mode::empty()) {
+            Ok(f) => {
+            while c.len() > 0 {
+                match write(f, challenge) {
+                    Ok(l) => {
+                        (_, c) = c.split_at(l);
+                    },
+                    Err(err) => {
+                        return Err(err);
+                    },
                 }
             }
+            close(f)?;
+        },
+        Err(err) => {
+            return Err(err);
         }
-        Err(e) => Err(e),
+    }
+
+    match open(outblob.as_str(), OFlag::empty(), Mode::empty()) {
+        Ok(f) => {
+            let mut blob = vec![];
+            loop {
+                let mut buf = [0u8; 256];
+                match read(f, &mut buf) {
+                    Ok(l) => {
+                        if l == 0 {
+                            break;
+                        } else {
+                            blob.extend(buf.split_at(l).0);
+                        }
+                    },
+                    Err(err) => {
+                        return Err(err);
+                    },
+                }
+            }
+            return Ok(blob);
+        },
+        Err(err) => {
+            return Err(err);
+        }
     }
 }

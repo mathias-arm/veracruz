@@ -42,6 +42,14 @@ pub fn init(filters: &str, backtrace: bool) -> nix::Result<()> {
     mkdir("/proc", chmod_0555).ok();
     mount::<_, _, _, [u8]>(Some("proc"), "/proc", Some("proc"), common_mnt_flags, None)?;
 
+    debug!("Mounting /sys");
+    mkdir("/sys", chmod_0755).ok();
+    mount::<_, _, _, [u8]>(Some("sysfs"), "/sys", Some("sysfs"), MsFlags::MS_NOSUID, None)?;
+
+    debug!("Mounting /sys/kernel/config");
+    mount::<_, _, _, [u8]>(Some("none"), "/sys/kernel/config", Some("configfs"),
+        MsFlags::MS_NOSUID, None)?;
+
     Ok(())
 }
 
