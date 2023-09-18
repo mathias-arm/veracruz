@@ -65,6 +65,8 @@ pub const CANONICAL_STDERR_FILE_PATH: &str = "stderr";
 /// A type capturing the platform the enclave is running on.
 #[derive(Debug)]
 pub enum Platform {
+    /// The enclave is running under CCA realm.
+    CCA,
     /// The enclave is running as a Linux process, either unprotected or as part of a
     /// protected Virtual Machine-like enclaving mechanism.
     Linux,
@@ -79,6 +81,7 @@ impl FromStr for Platform {
     type Err = PlatformError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "cca" => Ok(Platform::CCA),
             "nitro" => Ok(Platform::Nitro),
             "linux" => Ok(Platform::Linux),
             _ => Err(PlatformError::InvalidPlatform(String::from(s))),
@@ -90,6 +93,7 @@ impl FromStr for Platform {
 impl fmt::Display for Platform {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Platform::CCA => write!(f, "cca"),
             Platform::Linux => write!(f, "linux"),
             Platform::Nitro => write!(f, "nitro"),
             Platform::Mock => write!(f, "mock"),

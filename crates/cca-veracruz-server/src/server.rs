@@ -69,7 +69,7 @@ impl From<CCAError> for VeracruzServerError {
 ////////////////////////////////////////////////////////////////////////////
 
 const VERACRUZ_CCA_QEMU_BIN_DEFAULT: &[&str] = &["qemu-system-aarch64"];
-#[cfg(feature = "simulation")]
+#[cfg(feature = "fake-host")]
 const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
     "-machine",
     "virt",
@@ -103,7 +103,7 @@ const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
     "virtconsole,chardev=char0",
 ];
 
-#[cfg(not(feature = "simulation"))]
+#[cfg(not(feature = "fake-host"))]
 const VERACRUZ_CCA_QEMU_FLAGS_DEFAULT: &[&str] = &[
     "-machine",
     "virt",
@@ -230,7 +230,7 @@ impl CCAEnclave {
             .map(|s| s.replace("{initrd_path}", &initrd_path))
             .collect();
 
-        let use_vsock = cfg!(not(feature = "simulation"));
+        let use_vsock = cfg!(not(feature = "fake-host"));
 
         let com_flags: Vec<String> = if use_vsock {
             qemu_vsock_flags
@@ -476,7 +476,7 @@ impl VeracruzServer for VeracruzServerCCA {
             }
         };
 
-        let cert_chain = proxy_attestation_client::complete_proxy_attestation_nitro(
+        let cert_chain = proxy_attestation_client::complete_proxy_attestation_linux(
             policy.proxy_attestation_server_url(),
             &token,
             &csr,

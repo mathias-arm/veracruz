@@ -14,12 +14,12 @@
 default: all
 
 WORKSPACE_DIR = $(abspath ..)
-SIMULATION ?= 0
+FAKE_HOST ?= 0
 
-ifeq ($(SIMULATION), 0)
-    SIMULATION_FEATURE =
+ifeq ($(FAKE_HOST), 0)
+    FAKE_HOST_FEATURE =
 else
-    SIMULATION_FEATURE = --features simulation
+    FAKE_HOST_FEATURE = --features fake-host
 endif
 
 include $(WORKSPACE_DIR)/common.mk
@@ -51,7 +51,7 @@ run: cca Image.guest
 		-kernel Image.guest -initrd initrd.cpio
 
 cca-runtime-manager:
-	cargo build $(PROFILE_FLAG) $(V_FLAG) $(SIMULATION_FEATURE)
+	cargo build $(PROFILE_FLAG) $(V_FLAG) $(FAKE_HOST_FEATURE)
 
 doc:
 	cargo doc

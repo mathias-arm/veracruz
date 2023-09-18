@@ -24,7 +24,7 @@ pub enum RuntimeManagerError {
     FileSystemError(#[error(source)] wasi_types::ErrNo),
     #[error(display = "RuntimeManager: Uninitialized session in function {}.", _0)]
     UninitializedSessionError(&'static str),
-    #[cfg(feature = "linux")]
+    #[cfg(any(feature = "linux", feature="cca"))]
     #[error(display = "RuntimeManager: {} failed with error code {:?}.", _0, _1)]
     UnsafeCallError(&'static str, u32),
     #[error(display = "RuntimeManager: Unavailable session with ID {}.", _0)]

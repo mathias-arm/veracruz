@@ -84,6 +84,8 @@ pub struct Policy {
     /// The ciphersuite that will be used with the TLS connections between the
     /// principals of the computation and the enclave.
     ciphersuite: String,
+    /// The hash of the Veracruz trusted runtime for CCA realms.
+    runtime_manager_hash_cca: Option<String>,
     /// The hash of the Veracruz trusted runtime for Linux applications.
     runtime_manager_hash_linux: Option<String>,
     /// The hash of the Veracruz trusted runtime for AWS Nitro Enclaves.
@@ -123,6 +125,7 @@ impl Policy {
         veracruz_server_url: String,
         enclave_cert_expiry: Timepoint,
         ciphersuite: String,
+        runtime_manager_hash_cca: Option<String>,
         runtime_manager_hash_linux: Option<String>,
         runtime_manager_hash_nitro: Option<String>,
         proxy_attestation_server_url: String,
@@ -146,6 +149,7 @@ impl Policy {
             veracruz_server_url,
             enclave_cert_expiry,
             ciphersuite,
+            runtime_manager_hash_cca,
             runtime_manager_hash_linux,
             runtime_manager_hash_nitro,
             proxy_attestation_server_url,
@@ -223,6 +227,10 @@ impl Policy {
     #[inline]
     pub fn runtime_manager_hash(&self, platform: &Platform) -> Result<&String> {
         let hash = match platform {
+            Platform::CCA => self
+                .runtime_manager_hash_cca
+                .as_ref()
+                .ok_or(anyhow!(PolicyError::InvalidPlatform))?,
             Platform::Linux => self
                 .runtime_manager_hash_linux
                 .as_ref()

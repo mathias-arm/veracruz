@@ -18,7 +18,9 @@ use std::process::Command;
 fn main() {
     let cc = {
         cfg_if::cfg_if! {
-            if #[cfg(feature = "linux")] {
+            if #[cfg(feature = "cca")] {
+                env::var(format!("CC_{}", env::var("TARGET").unwrap().replace("-", "_"))).unwrap()
+            } else if #[cfg(feature = "linux")] {
                 "gcc".to_string()
             } else if #[cfg(feature = "nitro")] {
                 "gcc".to_string()

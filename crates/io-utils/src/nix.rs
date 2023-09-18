@@ -9,13 +9,13 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for copyright
 //! and licensing information.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use bincode::{deserialize, serialize};
 use byteorder::{ByteOrder, LittleEndian};
 use log::error;
 use nix::unistd::{read, write};
 use serde::{de::DeserializeOwned, Serialize};
-use std::os::unix::prelude::RawFd;
+use std::os::unix::io::RawFd;
 
 /// Sends a `buffer` of data (by first transmitting an encoded length followed by
 /// the data proper) to the file descriptor `fd`.
@@ -64,9 +64,16 @@ pub fn receive_buffer(fd: RawFd) -> Result<Vec<u8>> {
         LittleEndian::read_u64(&buff) as usize
     };
 
+    if length > 1024 * 1024 {
+        return Err(anyhow!("Invalid size {}", length))
+    }
+
     // 2. Next, read the data proper.
     let mut buffer = vec![0u8; length];
-    crate::nix::read_exact(fd, &mut buffer)?;
+
+    if length > 0 {
+        crate::nix::read_exact(fd, &mut buffer)?;
+    }
 
     Ok(buffer)
 }

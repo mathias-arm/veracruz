@@ -1,5 +1,6 @@
 mod cca;
 mod init;
+mod fake;
 
 use anyhow::{anyhow, Error, Result};
 use io_utils::nix::{receive_buffer, send_buffer};
@@ -29,7 +30,7 @@ const BACKLOG: usize = 1;
 const ATTESTATION_TEST: bool = false;
 
 fn main() -> Result<()> {
-    crate::init::init("debug", true)?;
+    crate::init::init("trace", true)?;
 
     std::panic::set_hook(Box::new(|info| {
         error!("{}", info);
@@ -44,7 +45,7 @@ fn main() -> Result<()> {
         return crate::init::reboot().map_err(Error::from);
     }
 
-    let fd: RawFd = if cfg!(not(feature = "simulation")) {
+    let fd: RawFd = if cfg!(not(feature = "fake-host")) {
         info!("Using vsock");
         let socket_fd = socket(
             AddressFamily::Vsock,
@@ -115,7 +116,7 @@ fn main() -> Result<()> {
                 return_message
             }
             RuntimeManagerRequest::GetTlsData(session_id) => {
-                println!("runtime_manager_cca::main GetTlsData");
+                debug!("runtime_manager_cca::main GetTlsData");
                 let return_message = match managers::session_manager::get_data(session_id) {
                     Ok((active, output_data)) => {
                         RuntimeManagerResponse::TlsData(output_data, active)
@@ -151,8 +152,8 @@ fn attestation(challenge: &[u8], _challenge_id: Uuid) -> Result<RuntimeManagerRe
     // generate the csr
     let csr: Vec<u8> = managers::session_manager::generate_csr()?;
 
-    if cfg!(feature = "simulation") {
-        return fake_attestation(challenge, csr);
+    if cfg!(feature = "fake-host") {
+        return fake::fake_attestation(challenge, csr);
     }
 
     match cca::attestation(challenge) {
@@ -179,29 +180,4 @@ fn initialize(policy_json: &str, cert_chain: &Vec<u8>) -> Result<RuntimeManagerR
     managers::session_manager::load_cert_chain(cert_chain)?;
 
     Ok(RuntimeManagerResponse::Status(Status::Success))
-}
-
-fn fake_attestation(_challenge: &[u8], csr: Vec<u8>) -> Result<RuntimeManagerResponse> {
-    let token_hex = "\
-    d28444a1013822a05901c9a60a58400000000000000000000000000000000000
-    0000000000000000000000000000000000000000000000000000000000000000
-    00000000000000000000000000000019620d5820aea131de37171000aabbccdd
-    eeff001122334455667788990123456789abcdef19620ef519621158610476f9
-    88091be585ed41801aecfab858548c63057e16b0e676120bbd0d2f9c29e056c5
-    d41a0130eb9c21517899dc23146b28e1b062bd3ea4b315fd219f1cbb528cb6e7
-    4ca49be16773734f61a1ca61031b2bbf3d918f2f94ffc4228e50919544ae1962
-    100119620f875820000000000000000000000000000000000000000000000000
-    0000000000000000582000000000000000000000000000000000000000000000
-    0000000000000000000058200000000000000000000000000000000000000000
-    0000000000000000000000005820000000000000000000000000000000000000
-    0000000000000000000000000000582000000000000000000000000000000000
-    0000000000000000000000000000000058200000000000000000000000000000
-    0000000000000000000000000000000000005820000000000000000000000000
-    00000000000000000000000000000000000000005860e8918241325ec38f58cd
-    16580233a728271df36ec98d411c859d220cf3ae3e1f386ed7041ecc232082ba
-    51c133a09793c2cb44b4b58880e05459e3091687216ba61eab1b4eeccd504718
-    af06b4df5a2da171de4a2e27d54a4fe145904857cbe5";
-    let token_hex: String = token_hex.chars().filter(|c| !c.is_whitespace()).collect();
-    let token = hex::decode(token_hex).ok().unwrap();
-    Ok(RuntimeManagerResponse::AttestationData(token, csr))
 }
